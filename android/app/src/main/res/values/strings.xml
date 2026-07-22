@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cable Guy</string>
+    <string name="title_activity_main">Cable Guy</string>
+    <string name="package_name">com.cableguy.app</string>
+    <string name="custom_url_scheme">com.cableguy.app</string>
+</resources>
