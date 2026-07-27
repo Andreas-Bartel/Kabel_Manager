@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer } from 'lucide-react';
+import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer, Settings, ArrowLeft } from 'lucide-react';
 import Fuse from 'fuse.js';
-import { Cable, Device, StorageLocation, buildLocationPath, checkPowerCompatibility, CompatibilityResult } from './contexts/inventory/domain/types';
+import { Cable, Device, StorageLocation, buildLocationPath, checkPowerCompatibility, CompatibilityResult, ImageAttachment } from './contexts/inventory/domain/types';
 import { LocalStorageCableRepository } from './contexts/inventory/infrastructure/LocalStorageCableRepository';
 import { LocalStorageDeviceRepository } from './contexts/inventory/infrastructure/LocalStorageDeviceRepository';
 import { LocalStorageLocationRepository } from './contexts/inventory/infrastructure/LocalStorageLocationRepository';
@@ -28,6 +28,19 @@ const deleteDeviceUseCase = new DeleteDeviceUseCase(cableRepo, deviceRepo);
 const exportUseCase = new ExportUserDataUseCase(cableRepo, deviceRepo, locationRepo);
 const getCableByQrUseCase = new GetCableByQrPayloadUseCase(cableRepo);
 
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 export default function App() {
   // State
   const [cables, setCables] = useState<Cable[]>([]);
@@ -43,7 +56,7 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(true);
 
   // Tab Navigation
-  const [activeTab, setActiveTab] = useState<'overview' | 'locations' | 'cables' | 'devices' | 'compatibility' | 'scan'>('overview');
+  const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'locations' | 'cables' | 'chargers' | 'devices' | 'scan' | 'settings'>('home');
 
   // Form States - Location
   const [locName, setLocName] = useState('');
@@ -69,6 +82,238 @@ export default function App() {
   const [devAmperage, setDevAmperage] = useState(2);
   const [devLocation, setDevLocation] = useState('');
 
+  const [activeOverviewList, setActiveOverviewList] = useState<'none' | 'cables' | 'chargers' | 'devices' | 'locations'>('none');
+  const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
+
+  // Form States - Cable new attributes (Schritt 5 & Eigenschaften verwalten)
+  const [cabCableStandard1, setCabCableStandard1] = useState('');
+  const [cabCableStandard2, setCabCableStandard2] = useState('');
+  const [cabLength, setCabLength] = useState('');
+  const [cabColor, setCabColor] = useState('');
+  const [cabCondition, setCabCondition] = useState('');
+  const [cabMaterial, setCabMaterial] = useState('');
+  const [cabDataRate, setCabDataRate] = useState('');
+  const [cabChargingPower, setCabChargingPower] = useState('');
+  const [cabBrand, setCabBrand] = useState('');
+  const [cabConnectorType1, setCabConnectorType1] = useState('USB-C');
+  const [cabConnectorType2, setCabConnectorType2] = useState('USB-C');
+  const [customPropValues, setCustomPropValues] = useState<Record<string, string>>({});
+  
+  const [cabImages, setCabImages] = useState<ImageAttachment[]>([]);
+  const [devImages, setDevImages] = useState<ImageAttachment[]>([]);
+  const [tempCabImageLabel, setTempCabImageLabel] = useState('Gesamtansicht');
+  const [tempDevImageLabel, setTempDevImageLabel] = useState('Gesamtansicht');
+  const [cabLocParentId, setCabLocParentId] = useState<string | undefined>(undefined);
+  const [devLocParentId, setDevLocParentId] = useState<string | undefined>(undefined);
+
+  // Option lists for Cable attributes
+  const [cableStandardGroups, setCableStandardGroups] = useState<Record<string, string[]>>(() => {
+    const saved = localStorage.getItem('list_cable_standards_grouped');
+    return saved ? JSON.parse(saved) : {
+      usb: ['USB 2.0', 'USB 3.0', 'USB 3.1', 'USB 3.2', 'USB4', 'Kein USB-Standard'],
+      hdmi: ['HDMI 1.4', 'HDMI 2.0', 'HDMI 2.1', 'HDMI 2.1a'],
+      displayport: ['DP 1.2', 'DP 1.4', 'DP 2.0', 'DP 2.1'],
+      lightning: ['Lightning MFi-Zertifiziert'],
+      other: ['Kein Standard / Spezifisch']
+    };
+  });
+  const [lengths, setLengths] = useState<string[]>(() => {
+    const saved = localStorage.getItem('list_lengths');
+    return saved ? JSON.parse(saved) : ['0.25m', '0.5m', '1m', '1.5m', '2m', '3m', '5m'];
+  });
+  const [colors, setColors] = useState<string[]>(() => {
+    const saved = localStorage.getItem('list_colors');
+    return saved ? JSON.parse(saved) : ['Schwarz', 'Weiß', 'Grau', 'Blau', 'Rot', 'Grün', 'Silber', 'Gold'];
+  });
+  const [conditions, setConditions] = useState<string[]>(() => {
+    const saved = localStorage.getItem('list_conditions');
+    return saved ? JSON.parse(saved) : ['Neu', 'Sehr gut', 'Gebraucht', 'Defekt'];
+  });
+  const [materials, setMaterials] = useState<string[]>(() => {
+    const saved = localStorage.getItem('list_materials');
+    return saved ? JSON.parse(saved) : ['Kunststoff', 'Nylon geflochten', 'Gummi', 'Textil'];
+  });
+  const [dataRates, setDataRates] = useState<string[]>(() => {
+    const saved = localStorage.getItem('list_data_rates');
+    return saved ? JSON.parse(saved) : ['480 Mbps', '5 Gbps', '10 Gbps', '20 Gbps', '40 Gbps', 'Nur Laden'];
+  });
+  const [chargingPowers, setChargingPowers] = useState<string[]>(() => {
+    const saved = localStorage.getItem('list_charging_powers');
+    return saved ? JSON.parse(saved) : ['15W', '60W', '100W', '240W', 'Keine'];
+  });
+  const [brands, setBrands] = useState<string[]>(() => {
+    const saved = localStorage.getItem('list_brands');
+    return saved ? JSON.parse(saved) : ['Belkin', 'Anker', 'Apple', 'Samsung', 'Ugreen', 'Generisch'];
+  });
+  const [connectors, setConnectors] = useState<string[]>(() => {
+    const saved = localStorage.getItem('list_connectors');
+    return saved ? JSON.parse(saved) : ['USB-C', 'USB-A', 'Micro-USB', 'Lightning', 'HDMI', 'DisplayPort', 'DC-Jack', 'Klinke (3.5mm)'];
+  });
+
+  // Custom properties definitions
+  const [customProperties, setCustomProperties] = useState<{ id: string; label: string; values: string[] }[]>(() => {
+    const saved = localStorage.getItem('list_custom_properties');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Helper to determine active group for connector standards
+  const getConnectorFamily = (conn: string): string => {
+    const c = conn.toLowerCase();
+    if (c.includes('usb')) return 'usb';
+    if (c.includes('hdmi')) return 'hdmi';
+    if (c.includes('displayport') || c.includes('dp')) return 'displayport';
+    if (c.includes('lightning')) return 'lightning';
+    return 'other';
+  };
+
+  const handleSelectChange = (
+    field: string, 
+    value: string, 
+    optionsList: string[], 
+    setList: React.Dispatch<React.SetStateAction<string[]>>, 
+    storageKey: string,
+    setFormValue: (v: string) => void
+  ) => {
+    if (value === '__ADD_NEW__') {
+      const newValue = prompt(`Neuen Wert für "${field}" eingeben:`);
+      if (newValue && newValue.trim()) {
+        const trimmed = newValue.trim();
+        if (!optionsList.includes(trimmed)) {
+          const updated = [...optionsList, trimmed];
+          setList(updated);
+          localStorage.setItem(storageKey, JSON.stringify(updated));
+          setFormValue(trimmed);
+        } else {
+          setFormValue(trimmed);
+        }
+      } else {
+        setFormValue(''); // Reset if cancelled
+      }
+    } else {
+      setFormValue(value);
+    }
+  };
+
+  const handleCableStandardSelect = (index: 1 | 2, val: string) => {
+    const conn = index === 1 ? cabConnectorType1 : cabConnectorType2;
+    const family = getConnectorFamily(conn);
+    const setCabCableStandard = index === 1 ? setCabCableStandard1 : setCabCableStandard2;
+    
+    if (val === '__ADD_NEW__') {
+      const newVal = prompt(`Neuen Kabel-Standard für Steckerfamilie "${family.toUpperCase()}" eingeben:`);
+      if (newVal && newVal.trim()) {
+        const trimmed = newVal.trim();
+        const currentGroup = cableStandardGroups[family] || [];
+        if (!currentGroup.includes(trimmed)) {
+          const updated = {
+            ...cableStandardGroups,
+            [family]: [...currentGroup, trimmed]
+          };
+          setCableStandardGroups(updated);
+          localStorage.setItem('list_cable_standards_grouped', JSON.stringify(updated));
+          setCabCableStandard(trimmed);
+        } else {
+          setCabCableStandard(trimmed);
+        }
+      } else {
+        setCabCableStandard('');
+      }
+    } else {
+      setCabCableStandard(val);
+    }
+  };
+
+  const [selectedCableDetails, setSelectedCableDetails] = useState<Cable | null>(null);
+  const [selectedDeviceDetails, setSelectedDeviceDetails] = useState<Device | null>(null);
+
+  const [newCustomPropLabel, setNewCustomPropLabel] = useState('');
+  const [tempPropValues, setTempPropValues] = useState<Record<string, string>>({});
+
+  const handleAddPropValue = (storageKey: string, currentValues: string[], setList: Function, newValue: string) => {
+    if (!newValue.trim()) return;
+    const trimmed = newValue.trim();
+    if (!currentValues.includes(trimmed)) {
+      const updated = [...currentValues, trimmed];
+      setList(updated);
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    }
+  };
+
+  const handleRemovePropValue = (storageKey: string, currentValues: string[], setList: Function, valueToRemove: string) => {
+    const updated = currentValues.filter(v => v !== valueToRemove);
+    setList(updated);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+  };
+
+  const handleAddCableStandard = (family: string, newValue: string) => {
+    if (!newValue.trim()) return;
+    const trimmed = newValue.trim();
+    const currentGroup = cableStandardGroups[family] || [];
+    if (!currentGroup.includes(trimmed)) {
+      const updated = {
+        ...cableStandardGroups,
+        [family]: [...currentGroup, trimmed]
+      };
+      setCableStandardGroups(updated);
+      localStorage.setItem('list_cable_standards_grouped', JSON.stringify(updated));
+    }
+  };
+
+  const handleRemoveCableStandard = (family: string, valueToRemove: string) => {
+    const currentGroup = cableStandardGroups[family] || [];
+    const updated = {
+      ...cableStandardGroups,
+      [family]: currentGroup.filter(v => v !== valueToRemove)
+    };
+    setCableStandardGroups(updated);
+    localStorage.setItem('list_cable_standards_grouped', JSON.stringify(updated));
+  };
+
+  const handleCreateCustomProperty = () => {
+    if (!newCustomPropLabel.trim()) return;
+    const label = newCustomPropLabel.trim();
+    const id = `custom_${Date.now()}`;
+    const newProp = { id, label, values: [] };
+    const updated = [...customProperties, newProp];
+    setCustomProperties(updated);
+    localStorage.setItem('list_custom_properties', JSON.stringify(updated));
+    setNewCustomPropLabel('');
+  };
+
+  const handleDeleteCustomProperty = (id: string) => {
+    if (confirm("Möchtest du diese gesamte Eigenschaftskategorie wirklich löschen?")) {
+      const updated = customProperties.filter(p => p.id !== id);
+      setCustomProperties(updated);
+      localStorage.setItem('list_custom_properties', JSON.stringify(updated));
+    }
+  };
+
+  const handleAddCustomPropValue = (propId: string, newValue: string) => {
+    if (!newValue.trim()) return;
+    const trimmed = newValue.trim();
+    const updated = customProperties.map(p => {
+      if (p.id === propId) {
+        if (!p.values.includes(trimmed)) {
+          return { ...p, values: [...p.values, trimmed] };
+        }
+      }
+      return p;
+    });
+    setCustomProperties(updated);
+    localStorage.setItem('list_custom_properties', JSON.stringify(updated));
+  };
+
+  const handleRemoveCustomPropValue = (propId: string, valueToRemove: string) => {
+    const updated = customProperties.map(p => {
+      if (p.id === propId) {
+        return { ...p, values: p.values.filter(v => v !== valueToRemove) };
+      }
+      return p;
+    });
+    setCustomProperties(updated);
+    localStorage.setItem('list_custom_properties', JSON.stringify(updated));
+  };
+
   // Form States - Compatibility Check
   const [selectedCableId, setSelectedCableId] = useState('');
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
@@ -86,15 +331,28 @@ export default function App() {
   // Sticker Ummanning (Schritt 19)
   const [reassigningCableId, setReassigningCableId] = useState<string | null>(null);
 
-  // Register PWA Service Worker (Schritt 18)
+  // Register PWA Service Worker (Schritt 18) - Im DEV-Modus deaktivieren, um Caching-Konflikte zu vermeiden
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if (import.meta.env.DEV) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const registration of registrations) {
+            registration.unregister().then((success) => {
+              if (success) {
+                console.log("Stale Service Worker unregistered in DEV mode.");
+                window.location.reload();
+              }
+            });
+          }
+        });
+      }
+    } else if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
     
     let anonId = localStorage.getItem('cable_guy_anon_user_id');
     if (!anonId) {
-      anonId = crypto.randomUUID();
+      anonId = generateUUID();
       localStorage.setItem('cable_guy_anon_user_id', anonId);
     }
     setCurrentUserId(anonId);
@@ -112,6 +370,7 @@ export default function App() {
       root.style.setProperty('--border-glass', 'rgba(255, 255, 255, 0.08)');
       root.style.setProperty('--text-primary', '#f3f4f6');
       root.style.setProperty('--text-secondary', '#9ca3af');
+      root.style.setProperty('--icon-filter', 'invert(1)');
     } else {
       root.style.setProperty('--bg-primary', '#f9fafb');
       root.style.setProperty('--bg-secondary', '#ffffff');
@@ -120,16 +379,195 @@ export default function App() {
       root.style.setProperty('--border-glass', 'rgba(0, 0, 0, 0.06)');
       root.style.setProperty('--text-primary', '#111827');
       root.style.setProperty('--text-secondary', '#4b5563');
+      root.style.setProperty('--icon-filter', 'none');
     }
   }, [darkMode]);
 
   const refreshData = async () => {
     const c = await cableRepo.getAllCables();
+    // Migration: Bereinige normale Kabel, die fälschlicherweise mit powerOutputs gespeichert wurden
+    let migrated = false;
+    const cleanedCables = c.map(cable => {
+      if (!cable.isMultiOutput && cable.powerOutputs !== undefined) {
+        migrated = true;
+        return { ...cable, powerOutputs: undefined };
+      }
+      return cable;
+    });
+    if (migrated) {
+      for (const cab of cleanedCables) {
+        await cableRepo.saveCable(cab);
+      }
+    }
+
     const d = await deviceRepo.getAllDevices();
     const l = await locationRepo.getAllLocations();
-    setCables(c);
+    setCables(cleanedCables);
     setDevices(d);
     setLocations(l);
+  };
+
+  const renderLocationTreeSelector = (
+    currentParentId: string | undefined,
+    setCurrentParentId: (id: string | undefined) => void,
+    selectedLocationId: string,
+    setSelectedLocationId: (id: string) => void,
+    label: string
+  ) => {
+    // Top-level or current children
+    const visibleLocations = locations.filter(l => 
+      currentParentId === undefined 
+        ? !l.parentLocationId 
+        : l.parentLocationId === currentParentId
+    );
+
+    // Build path of currentParentId to show breadcrumbs
+    const getPathNodes = (parentId: string | undefined): StorageLocation[] => {
+      if (!parentId) return [];
+      const loc = locations.find(l => l.id === parentId);
+      if (!loc) return [];
+      return [...getPathNodes(loc.parentLocationId), loc];
+    };
+
+    const breadcrumbs = getPathNodes(currentParentId);
+    const selectedLocName = selectedLocationId ? buildLocationPath(selectedLocationId, locations) : 'Kein Ort ausgewählt';
+
+    return (
+      <div className="glass-panel" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }}>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+          {label} (Baumstruktur)
+        </div>
+        
+        {/* Selected indicator */}
+        <div style={{ fontSize: '0.85rem', color: selectedLocationId ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: 600 }}>
+          Auswahl: {selectedLocName}
+          {selectedLocationId && (
+            <button 
+              type="button" 
+              onClick={() => setSelectedLocationId('')} 
+              style={{ marginLeft: '0.5rem', background: 'none', color: 'var(--error)', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+            >
+              (Zurücksetzen)
+            </button>
+          )}
+        </div>
+
+        {/* Breadcrumbs */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center', fontSize: '0.8rem', background: 'rgba(255,255,255,0.03)', padding: '0.4rem', borderRadius: '4px' }}>
+          <span 
+            onClick={() => setCurrentParentId(undefined)} 
+            style={{ cursor: 'pointer', color: currentParentId === undefined ? 'var(--text-primary)' : 'var(--accent-secondary)', textDecoration: currentParentId === undefined ? 'none' : 'underline' }}
+          >
+            Start
+          </span>
+          {breadcrumbs.map((node, i) => (
+            <React.Fragment key={node.id}>
+              <span style={{ color: 'var(--text-muted)' }}>&gt;</span>
+              <span 
+                onClick={() => setCurrentParentId(node.id)} 
+                style={{ cursor: 'pointer', color: i === breadcrumbs.length - 1 ? 'var(--text-primary)' : 'var(--accent-secondary)', textDecoration: i === breadcrumbs.length - 1 ? 'none' : 'underline' }}
+              >
+                {node.name}
+              </span>
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* List of sub-locations */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-glass)', borderRadius: '4px', padding: '0.5rem', background: 'rgba(0,0,0,0.1)' }}>
+          {visibleLocations.length === 0 ? (
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keine untergeordneten Orte vorhanden.</span>
+          ) : (
+            visibleLocations.map(loc => {
+              const hasSub = locations.some(l => l.parentLocationId === loc.id);
+              const isSelected = selectedLocationId === loc.id;
+              return (
+                <div key={loc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0.5rem', borderRadius: '4px', background: isSelected ? 'var(--accent-glow)' : 'rgba(255,255,255,0.02)', border: isSelected ? '1px solid var(--accent-primary)' : '1px solid transparent' }}>
+                  <span 
+                    onClick={() => hasSub && setCurrentParentId(loc.id)} 
+                    style={{ fontSize: '0.85rem', cursor: hasSub ? 'pointer' : 'default', fontWeight: hasSub ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: '0.25rem', flex: 1 }}
+                  >
+                    {hasSub ? '📁' : '📍'} {loc.name} {hasSub && <span style={{ fontSize: '0.7rem', color: 'var(--accent-secondary)' }}>(Öffnen)</span>}
+                  </span>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLocationId(loc.id)}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.75rem',
+                      borderRadius: '3px',
+                      background: isSelected ? 'var(--success)' : 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-glass)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {isSelected ? '✓ Gewählt' : 'Wählen'}
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Back one level button */}
+        {currentParentId !== undefined && (
+          <button 
+            type="button" 
+            onClick={() => {
+              const currentLoc = locations.find(l => l.id === currentParentId);
+              setCurrentParentId(currentLoc?.parentLocationId || undefined);
+            }} 
+            style={{ fontSize: '0.75rem', background: 'none', color: 'var(--accent-secondary)', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+          >
+            ← Eine Ebene nach oben
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  const renderLocationTree = (parentId: string | undefined, depth: number): React.ReactNode => {
+    const levelLocs = locations.filter(l => 
+      parentId === undefined 
+        ? !l.parentLocationId 
+        : l.parentLocationId === parentId
+    );
+
+    if (levelLocs.length === 0) return null;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginLeft: depth > 0 ? '1rem' : 0, borderLeft: depth > 0 ? '1px dashed var(--border-glass)' : 'none', paddingLeft: depth > 0 ? '0.5rem' : 0 }}>
+        {levelLocs.map(loc => {
+          const hasSub = locations.some(l => l.parentLocationId === loc.id);
+          const isExpanded = !!expandedLocations[loc.id];
+          return (
+            <div key={loc.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.6rem', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                <span 
+                  onClick={() => {
+                    if (hasSub) {
+                      setExpandedLocations(prev => ({ ...prev, [loc.id]: !prev[loc.id] }));
+                    }
+                  }}
+                  style={{ fontSize: '0.85rem', fontWeight: hasSub ? 600 : 'normal', cursor: hasSub ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1 }}
+                >
+                  {hasSub ? (isExpanded ? '▼ 📁' : '▶ 📁') : '📍'} {loc.name} {loc.description && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>({loc.description})</span>}
+                </span>
+                <button 
+                  onClick={() => handleDeleteLocation(loc.id)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem' }}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+              {hasSub && isExpanded && renderLocationTree(loc.id, depth + 1)}
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   // Fuzzy Search mit Fuse.js
@@ -170,15 +608,21 @@ export default function App() {
     }
   };
 
-  // Actions - Cable
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  // Actions - Cable & Device Images
+  const handleImageAttachmentUpload = async (context: 'cable' | 'device', file: File, label: string) => {
     try {
       setIsCompressing(true);
       const compressed = await compressImage(file);
-      setCabImage(compressed);
+      const newImage: ImageAttachment = {
+        id: generateUUID(),
+        url: compressed,
+        label: label.trim() || 'Unbenannt'
+      };
+      if (context === 'cable') {
+        setCabImages(prev => [...prev, newImage]);
+      } else {
+        setDevImages(prev => [...prev, newImage]);
+      }
     } catch (err) {
       alert("Fehler bei der Bildkomprimierung.");
     } finally {
@@ -186,30 +630,67 @@ export default function App() {
     }
   };
 
+  const handleRemoveImageAttachment = (context: 'cable' | 'device', id: string) => {
+    if (context === 'cable') {
+      setCabImages(prev => prev.filter(img => img.id !== id));
+    } else {
+      setDevImages(prev => prev.filter(img => img.id !== id));
+    }
+  };
+
   const handleCreateCable = async (e: React.FormEvent) => {
     e.preventDefault();
     const powerOutputs = cabIsMulti 
       ? ports.map(p => ({ ...p, wattage: p.voltage * p.amperage, portType: p.portType as any }))
-      : [{ voltage: 5, amperage: 1, wattage: 5, portType: cabConnector as any }];
+      : undefined;
 
     const newCable: Cable = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: cabName,
-      connectorType: cabConnector,
+      connectorType: cabIsMulti ? (ports[0]?.portType as any || 'Other') : (cabConnectorType1 as any),
       locationId: cabLocation || undefined,
       isMultiOutput: cabIsMulti,
       powerOutputs,
-      imageUrl: cabImage || undefined,
+      imageUrl: cabImages[0]?.url || undefined,
       userId: currentUserId,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      
+      // Neue Eigenschaften (Schritt 5)
+      cableStandard1: cabCableStandard1 || undefined,
+      cableStandard2: cabCableStandard2 || undefined,
+      length: cabLength || undefined,
+      color: cabColor || undefined,
+      condition: cabCondition || undefined,
+      material: cabMaterial || undefined,
+      dataRate: cabDataRate || undefined,
+      chargingPower: cabChargingPower || undefined,
+      brand: cabBrand || undefined,
+      connectorType1: cabConnectorType1 || undefined,
+      connectorType2: cabConnectorType2 || undefined,
+      additionalProperties: Object.keys(customPropValues).length > 0 ? customPropValues : undefined,
+      images: cabImages.length > 0 ? cabImages : undefined
     };
 
     await cableRepo.saveCable(newCable);
     setCabName('');
     setCabLocation('');
     setCabIsMulti(false);
-    setCabImage(null);
+    setCabImages([]);
+    setTempCabImageLabel('Gesamtansicht');
+    setCabLocParentId(undefined);
+    setCabCableStandard1('');
+    setCabCableStandard2('');
+    setCabLength('');
+    setCabColor('');
+    setCabCondition('');
+    setCabMaterial('');
+    setCabDataRate('');
+    setCabChargingPower('');
+    setCabBrand('');
+    setCabConnectorType1('USB-C');
+    setCabConnectorType2('USB-C');
+    setCustomPropValues({});
     refreshData();
   };
 
@@ -217,7 +698,7 @@ export default function App() {
   const handleDuplicateCable = async (cable: Cable) => {
     const duplicatedCable: Cable = {
       ...cable,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: `${cable.name} (Kopie)`,
       assignedDeviceIds: [], // Verknüpfungen zurücksetzen
       createdAt: new Date().toISOString(),
@@ -231,7 +712,7 @@ export default function App() {
   const handleCreateDevice = async (e: React.FormEvent) => {
     e.preventDefault();
     const newDevice: Device = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: devName,
       manufacturer: devBrand || undefined,
       requiredVoltage: devVoltage,
@@ -239,18 +720,30 @@ export default function App() {
       requiredConnectorType: devConnector,
       locationId: devLocation || undefined,
       userId: currentUserId,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      images: devImages.length > 0 ? devImages : undefined
     };
 
     await deviceRepo.saveDevice(newDevice);
     setDevName('');
     setDevBrand('');
+    setDevLocation('');
+    setDevImages([]);
+    setTempDevImageLabel('Gesamtansicht');
+    setDevLocParentId(undefined);
     refreshData();
   };
 
   const handleDeleteDevice = async (id: string) => {
     if (confirm("Gerät wirklich löschen? Zugehörige Kabel bleiben als 'verwaist' erhalten.")) {
       await deleteDeviceUseCase.execute(id);
+      refreshData();
+    }
+  };
+
+  const handleDeleteCable = async (id: string) => {
+    if (confirm("Kabel wirklich löschen?")) {
+      await cableRepo.deleteCable(id);
       refreshData();
     }
   };
@@ -412,99 +905,374 @@ export default function App() {
             color: black;
           }
         }
+        .tile-btn {
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease;
+        }
+        .tile-btn:hover {
+          transform: translateY(-4px);
+          border-color: var(--accent-primary) !important;
+          box-shadow: 0 8px 24px var(--accent-glow) !important;
+        }
       `}</style>
 
-      {/* Header & Theme Switch */}
-      <header style={{ position: 'relative', textAlign: 'center', marginTop: '0.5rem' }}>
-        <button 
-          onClick={() => setDarkMode(!darkMode)}
-          style={{ position: 'absolute', right: 0, top: 0, background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem', borderRadius: '50%', color: 'var(--text-primary)' }}
-        >
-          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-
-        <div style={{ display: 'inline-flex', padding: '0.75rem', borderRadius: '50%', background: 'var(--accent-gradient)', color: 'white', marginBottom: '0.5rem', boxShadow: '0 8px 24px var(--accent-glow)' }}>
-          <CableIcon size={32} />
+      {/* Header */}
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border-glass)', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => { stopCamera(); setReassigningCableId(null); setActiveTab('home'); }}>
+          <CableIcon size={24} style={{ color: 'var(--accent-primary)' }} />
+          <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>Kabel Manager</h1>
         </div>
-        <h1>Cable Guy</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-          Der Hüter über dein Kabelchaos
-        </p>
+
+        <button 
+          onClick={() => { stopCamera(); setReassigningCableId(null); setActiveTab('settings'); }}
+          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.6rem', borderRadius: '50%', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+        >
+          <Settings size={18} />
+        </button>
       </header>
 
-      {/* Tabs */}
-      <nav style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
-        <button className={activeTab === 'overview' ? 'btn-primary' : ''} onClick={() => { stopCamera(); setReassigningCableId(null); setActiveTab('overview'); }} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', background: activeTab === 'overview' ? '' : 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Übersicht</button>
-        <button className={activeTab === 'scan' ? 'btn-primary' : ''} onClick={() => { setActiveTab('scan'); startCamera(); }} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', background: activeTab === 'scan' ? '' : 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Scan / QR</button>
-        <button className={activeTab === 'locations' ? 'btn-primary' : ''} onClick={() => { stopCamera(); setReassigningCableId(null); setActiveTab('locations'); }} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', background: activeTab === 'locations' ? '' : 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Lagerorte</button>
-        <button className={activeTab === 'cables' ? 'btn-primary' : ''} onClick={() => { stopCamera(); setReassigningCableId(null); setActiveTab('cables'); }} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', background: activeTab === 'cables' ? '' : 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Kabel / Lader</button>
-        <button className={activeTab === 'devices' ? 'btn-primary' : ''} onClick={() => { stopCamera(); setReassigningCableId(null); setActiveTab('devices'); }} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', background: activeTab === 'devices' ? '' : 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Geräte</button>
-        <button className={activeTab === 'compatibility' ? 'btn-primary' : ''} onClick={() => { stopCamera(); setReassigningCableId(null); setActiveTab('compatibility'); }} style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', background: activeTab === 'compatibility' ? '' : 'var(--bg-secondary)', color: 'var(--text-primary)' }}>Kompatibilität</button>
-      </nav>
+      {activeTab !== 'home' && (
+        <button 
+          onClick={() => { stopCamera(); setReassigningCableId(null); setActiveTab('home'); }} 
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', marginBottom: '1rem', fontSize: '0.9rem', padding: 0 }}
+        >
+          <ArrowLeft size={16} /> Zurück
+        </button>
+      )}
 
-      {/* Fuzzy Search */}
-      <div className="glass-panel" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <Search size={20} style={{ color: 'var(--text-muted)' }} />
-        <input
-          type="text"
-          placeholder="Fuzzy-Suche (z.B. 'hmdi', 'kamra')..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            background: 'none',
-            border: 'none',
-            outline: 'none',
-            color: 'var(--text-primary)',
-            fontSize: '1rem',
-            width: '100%',
-            fontFamily: 'var(--font-sans)'
-          }}
-        />
-      </div>
+      {/* Fuzzy Search (nur in Unterseiten anzeigen, nicht auf Home) */}
+      {activeTab !== 'home' && activeTab !== 'settings' && (
+        <div className="glass-panel" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+          <Search size={20} style={{ color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            placeholder="Suchen..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              background: 'none',
+              border: 'none',
+              outline: 'none',
+              color: 'var(--text-primary)',
+              fontSize: '1rem',
+              width: '100%',
+              fontFamily: 'var(--font-sans)'
+            }}
+          />
+        </div>
+      )}
 
-      {/* Search Results */}
-      {searchQuery && (
-        <div className="glass-panel" style={{ padding: '1.25rem' }}>
+      {/* Search Results (nur in Unterseiten anzeigen) */}
+      {activeTab !== 'home' && activeTab !== 'settings' && searchQuery && (
+        <div className="glass-panel" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Suchergebnisse</h3>
           {searchResults.cables.length === 0 && searchResults.devices.length === 0 && (
             <p style={{ color: 'var(--text-muted)' }}>Keine passenden Kabel/Geräte gefunden.</p>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {searchResults.cables.map(c => (
-              <div key={c.id} style={{ padding: '0.5rem', background: 'var(--bg-tertiary)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                <span>🔌 {c.name} ({c.connectorType})</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kabel</span>
+              <div 
+                key={c.id} 
+                onClick={() => setSelectedCableDetails(c)}
+                style={{ padding: '0.65rem 0.85rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', cursor: 'pointer', transition: 'transform 0.15s ease' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <span>🔌 {c.name} ({c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType})</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Auswählen</span>
               </div>
             ))}
             {searchResults.devices.map(d => (
-              <div key={d.id} style={{ padding: '0.5rem', background: 'var(--bg-tertiary)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                <span>📱 {d.name}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Gerät</span>
+              <div 
+                key={d.id} 
+                onClick={() => setSelectedDeviceDetails(d)}
+                style={{ padding: '0.65rem 0.85rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', cursor: 'pointer', transition: 'transform 0.15s ease' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <span>📱 {d.name} ({d.manufacturer || 'Generisch'})</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--accent-secondary)', fontWeight: 600 }}>Auswählen</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* HOME DASHBOARD TILE GRID */}
+      {activeTab === 'home' && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+          {/* Tile 1: Übersicht */}
+          <div onClick={() => setActiveTab('overview')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+            <img src="/icons/overview.png" alt="Übersicht" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Übersicht</span>
+          </div>
+
+          {/* Tile 2: Scan / QR */}
+          <div onClick={() => { setActiveTab('scan'); startCamera(); }} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+            <img src="/icons/scan.png" alt="Scan / QR" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Scan / QR</span>
+          </div>
+
+          {/* Tile 3: Kabel */}
+          <div onClick={() => setActiveTab('cables')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+            <img src="/icons/cables.png" alt="Kabel" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Kabel</span>
+          </div>
+
+          {/* Tile 4: Ladegeräte */}
+          <div onClick={() => setActiveTab('chargers')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+            <img src="/icons/chargers.png" alt="Ladegeräte" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Ladegeräte</span>
+          </div>
+
+          {/* Tile 5: Geräte */}
+          <div onClick={() => setActiveTab('devices')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+            <img src="/icons/devices.png" alt="Geräte" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Geräte</span>
+          </div>
+
+          {/* Tile 6: Lagerorte */}
+          <div onClick={() => setActiveTab('locations')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+            <img src="/icons/locations.png" alt="Lagerorte" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Lagerorte</span>
+          </div>
+        </div>
+        </>
+      )}
+      
       {/* TAB: OVERVIEW */}
       {activeTab === 'overview' && !searchQuery && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <section className="glass-panel" style={{ padding: '1.25rem' }}>
             <h2 style={{ fontSize: '1.2rem', marginBottom: '0.75rem' }}>Dein Kabel-Inventar</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-              <div style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-primary)' }}>{cables.length}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kabel/Lader</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div 
+                onClick={() => setActiveOverviewList(prev => prev === 'cables' ? 'none' : 'cables')} 
+                style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center', cursor: 'pointer', border: activeOverviewList === 'cables' ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)', transition: 'transform 0.15s ease' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-primary)' }}>
+                  {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Kabel</div>
               </div>
-              <div style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+              
+              <div 
+                onClick={() => setActiveOverviewList(prev => prev === 'chargers' ? 'none' : 'chargers')} 
+                style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center', cursor: 'pointer', border: activeOverviewList === 'chargers' ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)', transition: 'transform 0.15s ease' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-primary)' }}>
+                  {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Ladegeräte</div>
+              </div>
+
+              <div 
+                onClick={() => setActiveOverviewList(prev => prev === 'devices' ? 'none' : 'devices')} 
+                style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center', cursor: 'pointer', border: activeOverviewList === 'devices' ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)', transition: 'transform 0.15s ease' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
                 <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-secondary)' }}>{devices.length}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Geräte</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Geräte</div>
               </div>
-              <div style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--success)' }}>{locations.length}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Lagerorte</div>
+
+              <div 
+                onClick={() => setActiveOverviewList(prev => prev === 'locations' ? 'none' : 'locations')} 
+                style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center', cursor: 'pointer', border: activeOverviewList === 'locations' ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)', transition: 'transform 0.15s ease' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--success)' }}>
+                  {locations.filter(loc => cables.some(c => c.locationId === loc.id) || devices.some(d => d.locationId === loc.id)).length}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Lagerorte</div>
               </div>
             </div>
+
+            {/* Inline Kabel-Liste */}
+            {activeOverviewList === 'cables' && (
+              <div className="glass-panel" style={{ padding: '1rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(0,0,0,0.1)' }}>
+                <h3 style={{ fontSize: '0.95rem', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Registrierte Kabel</span>
+                  <button onClick={() => setActiveOverviewList('none')} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>Schließen</button>
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '300px', overflowY: 'auto' }}>
+                  {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length === 0 ? (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keine Kabel registriert.</span>
+                  ) : (
+                    cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).map(c => (
+                      <div 
+                        key={c.id} 
+                        onClick={() => setSelectedCableDetails(c)}
+                        style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}
+                      >
+                        <strong>🔌 {c.name}</strong>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Inline Ladegeräte-Liste */}
+            {activeOverviewList === 'chargers' && (
+              <div className="glass-panel" style={{ padding: '1rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(0,0,0,0.1)' }}>
+                <h3 style={{ fontSize: '0.95rem', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Registrierte Ladegeräte</span>
+                  <button onClick={() => setActiveOverviewList('none')} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>Schließen</button>
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '300px', overflowY: 'auto' }}>
+                  {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length === 0 ? (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keine Ladegeräte registriert.</span>
+                  ) : (
+                    cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).map(c => (
+                      <div 
+                        key={c.id} 
+                        onClick={() => setSelectedCableDetails(c)}
+                        style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}
+                      >
+                        <strong>🔋 {c.name}</strong>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>
+                          {c.powerOutputs?.map(p => `${p.wattage}W`).join(', ') || c.connectorType}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Inline Geräte-Liste */}
+            {activeOverviewList === 'devices' && (
+              <div className="glass-panel" style={{ padding: '1rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(0,0,0,0.1)' }}>
+                <h3 style={{ fontSize: '0.95rem', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Registrierte Geräte</span>
+                  <button onClick={() => setActiveOverviewList('none')} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>Schließen</button>
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '300px', overflowY: 'auto' }}>
+                  {devices.length === 0 ? (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keine Geräte registriert.</span>
+                  ) : (
+                    devices.map(d => (
+                      <div 
+                        key={d.id} 
+                        onClick={() => setSelectedDeviceDetails(d)}
+                        style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}
+                      >
+                        <strong>📱 {d.name}</strong>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {d.manufacturer || 'Generisch'}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Hierarchische Lagerort-Übersicht bei Klick auf Lagerorte */}
+            {activeOverviewList === 'locations' && (
+              <div className="glass-panel" style={{ padding: '1rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(0,0,0,0.1)' }}>
+                <h3 style={{ fontSize: '0.95rem', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Lagerorte mit zugewiesenen Komponenten</span>
+                  <button 
+                    onClick={() => setActiveOverviewList('none')} 
+                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                  >
+                    Schließen
+                  </button>
+                </h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                  {locations.map(loc => {
+                    const locCables = cables.filter(c => c.locationId === loc.id && !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0));
+                    const locChargers = cables.filter(c => c.locationId === loc.id && (c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)));
+                    const locDevices = devices.filter(d => d.locationId === loc.id);
+                    
+                    const totalItems = locCables.length + locChargers.length + locDevices.length;
+                    if (totalItems === 0) return null; // Nur Lagerorte mit zugewiesenen Komponenten
+                    
+                    return (
+                      <div key={loc.id} style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--accent-primary)', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.25rem' }}>
+                          📍 {buildLocationPath(loc.id, locations)} ({totalItems})
+                        </div>
+                        
+                        {/* List Cables */}
+                        {locCables.length > 0 && (
+                          <div style={{ paddingLeft: '0.5rem' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Kabel:</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                              {locCables.map(c => (
+                                <span 
+                                  key={c.id} 
+                                  onClick={() => setSelectedCableDetails(c)}
+                                  className="btn-primary" 
+                                  style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', cursor: 'pointer', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '3px' }}
+                                >
+                                  🔌 {c.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* List Chargers */}
+                        {locChargers.length > 0 && (
+                          <div style={{ paddingLeft: '0.5rem' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Ladegeräte:</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                              {locChargers.map(c => (
+                                <span 
+                                  key={c.id} 
+                                  onClick={() => setSelectedCableDetails(c)}
+                                  className="btn-primary" 
+                                  style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', cursor: 'pointer', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '3px' }}
+                                >
+                                  🔋 {c.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* List Devices */}
+                        {locDevices.length > 0 && (
+                          <div style={{ paddingLeft: '0.5rem' }}>
+                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Geräte:</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                              {locDevices.map(d => (
+                                <span 
+                                  key={d.id} 
+                                  onClick={() => setSelectedDeviceDetails(d)}
+                                  className="btn-primary" 
+                                  style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', cursor: 'pointer', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '3px' }}
+                                >
+                                  📱 {d.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {!locations.some(loc => {
+                    const total = cables.filter(c => c.locationId === loc.id).length + devices.filter(d => d.locationId === loc.id).length;
+                    return total > 0;
+                  }) && (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keinen Lagerorten sind Komponenten zugewiesen.</span>
+                  )}
+                </div>
+              </div>
+            )}
           </section>
 
           <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -514,7 +1282,7 @@ export default function App() {
             </button>
             <button onClick={handleExportData} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}>
               <Upload size={18} />
-              DSGVO-Datenexport (.json)
+              Datenexport (.json)
             </button>
           </section>
         </div>
@@ -630,7 +1398,7 @@ export default function App() {
       {activeTab === 'locations' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateLocation} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3>Neuen Lagerort anlegen</h3>
+            <h3>Lagerort anlegen</h3>
             <input type="text" placeholder="Name" value={locName} onChange={e => setLocName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
             <select value={locParent} onChange={e => setLocParent(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
               <option value="">-- Kein übergeordneter Ort --</option>
@@ -644,16 +1412,12 @@ export default function App() {
 
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
             <h3>Lagerorte</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {locations.map(l => (
-                <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{l.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{buildLocationPath(l.id, locations)}</div>
-                  </div>
-                  <button onClick={() => handleDeleteLocation(l.id)} style={{ background: 'none', color: 'var(--error)' }}><Trash2 size={18} /></button>
-                </div>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+              {locations.length === 0 ? (
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Keine Lagerorte angelegt.</span>
+              ) : (
+                renderLocationTree(undefined, 0)
+              )}
             </div>
           </div>
         </div>
@@ -663,59 +1427,404 @@ export default function App() {
       {activeTab === 'cables' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateCable} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3>Neues Kabel / Lader registrieren</h3>
+            <h3>Kabel anlegen</h3>
             <input type="text" placeholder="Name" value={cabName} onChange={e => setCabName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Steckertyp</label>
-                <select value={cabConnector} onChange={e => setCabConnector(e.target.value as any)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <option value="USB-C">USB-C</option>
-                  <option value="Micro-USB">Micro-USB</option>
-                  <option value="Lightning">Lightning</option>
-                  <option value="HDMI">HDMI</option>
-                  <option value="DC-Jack">DC-Jack</option>
-                  <option value="Other">Andere</option>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Marke</label>
+                <select value={cabBrand} onChange={e => handleSelectChange('Marke', e.target.value, brands, setBrands, 'list_brands', setCabBrand)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="">-- Keine Angabe --</option>
+                  {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Lagerort</label>
-                <select value={cabLocation} onChange={e => setCabLocation(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <option value="">-- Kein Ort --</option>
-                  {locations.map(l => (
-                    <option key={l.id} value={l.id}>{buildLocationPath(l.id, locations)}</option>
-                  ))}
+                {/* Platzhalter */}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 1 (Quelle)</label>
+                <select value={cabConnectorType1} onChange={e => handleSelectChange('Stecker-Typ 1', e.target.value, connectors, setConnectors, 'list_connectors', setCabConnectorType1)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  {connectors.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 2 (Ziel)</label>
+                <select value={cabConnectorType2} onChange={e => handleSelectChange('Stecker-Typ 2', e.target.value, connectors, setConnectors, 'list_connectors', setCabConnectorType2)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  {connectors.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
                 </select>
               </div>
             </div>
 
-            {/* Bild Upload */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto</label>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} id="file-upload" />
-                <label htmlFor="file-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-                  <Upload size={16} /> Foto wählen
-                </label>
-                {isCompressing && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kompression...</span>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kabel-Standard (Stecker 1)</label>
+                <select value={cabCableStandard1} onChange={e => handleCableStandardSelect(1, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="">-- Keine Angabe --</option>
+                  {(cableStandardGroups[getConnectorFamily(cabConnectorType1)] || []).map(u => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                </select>
               </div>
-              {cabImage && <img src={cabImage} alt="Vorschau" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />}
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kabel-Standard (Stecker 2)</label>
+                <select value={cabCableStandard2} onChange={e => handleCableStandardSelect(2, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="">-- Keine Angabe --</option>
+                  {(cableStandardGroups[getConnectorFamily(cabConnectorType2)] || []).map(u => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                </select>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <input type="checkbox" id="multi" checked={cabIsMulti} onChange={e => setCabIsMulti(e.target.checked)} />
-              <label htmlFor="multi">Mehrere Ausgänge</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kabellänge</label>
+                <select value={cabLength} onChange={e => handleSelectChange('Kabellänge', e.target.value, lengths, setLengths, 'list_lengths', setCabLength)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="">-- Keine Angabe --</option>
+                  {lengths.map(l => <option key={l} value={l}>{l}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Farbe</label>
+                <select value={cabColor} onChange={e => handleSelectChange('Farbe', e.target.value, colors, setColors, 'list_colors', setCabColor)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="">-- Keine Angabe --</option>
+                  {colors.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                </select>
+              </div>
             </div>
 
-            <button type="submit" className="btn-primary">Registrieren</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Zustand</label>
+                <select value={cabCondition} onChange={e => handleSelectChange('Zustand', e.target.value, conditions, setConditions, 'list_conditions', setCabCondition)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="">-- Keine Angabe --</option>
+                  {conditions.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Material</label>
+                <select value={cabMaterial} onChange={e => handleSelectChange('Material', e.target.value, materials, setMaterials, 'list_materials', setCabMaterial)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="">-- Keine Angabe --</option>
+                  {materials.map(m => <option key={m} value={m}>{m}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Datenrate</label>
+                <select value={cabDataRate} onChange={e => handleSelectChange('Datenrate', e.target.value, dataRates, setDataRates, 'list_data_rates', setCabDataRate)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="">-- Keine Angabe --</option>
+                  {dataRates.map(d => <option key={d} value={d}>{d}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Ladeleistung</label>
+                <select value={cabChargingPower} onChange={e => handleSelectChange('Ladeleistung', e.target.value, chargingPowers, setChargingPowers, 'list_charging_powers', setCabChargingPower)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="">-- Keine Angabe --</option>
+                  {chargingPowers.map(p => <option key={p} value={p}>{p}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Custom Properties Fields */}
+            {customProperties.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                {customProperties.map(prop => (
+                  <div key={prop.id}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
+                    <select
+                      value={customPropValues[prop.id] || ''}
+                      onChange={e => handleSelectChange(
+                        prop.label,
+                        e.target.value,
+                        prop.values,
+                        (updatedValuesAction) => {
+                          const updatedProps = customProperties.map(p => {
+                            if (p.id === prop.id) {
+                              const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
+                              return { ...p, values: newValues };
+                            }
+                            return p;
+                          });
+                          setCustomProperties(updatedProps);
+                          localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
+                        },
+                        `list_custom_prop_${prop.id}`,
+                        (val) => setCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                      )}
+                      style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                    >
+                      <option value="">-- Keine Angabe --</option>
+                      {prop.values.map(v => <option key={v} value={v}>{v}</option>)}
+                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Hierarchische Lagerort-Auswahl */}
+            {renderLocationTreeSelector(cabLocParentId, setCabLocParentId, cabLocation, setCabLocation, 'Lagerort')}
+
+            {/* Foto beschreiben & hinzufügen */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Beschreibung (z.B. Stecker 1)" 
+                    value={tempCabImageLabel} 
+                    onChange={e => setTempCabImageLabel(e.target.value)} 
+                    style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
+                    }} style={{ display: 'none' }} id="cab-cam-upload" />
+                    <label htmlFor="cab-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
+                      📷 Kamera
+                    </label>
+
+                    <input type="file" accept="image/*" onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
+                    }} style={{ display: 'none' }} id="cab-gal-upload" />
+                    <label htmlFor="cab-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
+                      🖼️ Galerie
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div>
+                {/* Platzhalter */}
+              </div>
+            </div>
+
+            {/* Preview of uploaded images in Cable Form */}
+            {cabImages.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                {cabImages.map(img => (
+                  <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
+                    <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
+                      {img.label}
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveImageAttachment('cable', img.id)} 
+                      style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+
+            <button type="submit" className="btn-primary" onClick={() => setCabIsMulti(false)}>Kabel anlegen</button>
           </form>
 
           {/* List Cables */}
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
             <h3>Registrierte Kabel</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
-              {cables.map(c => (
-                <div key={c.id} style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
+              {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).map(c => (
+                <div 
+                  key={c.id} 
+                  onClick={() => setSelectedCableDetails(c)}
+                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <strong>{c.name}</strong>
+                      {c.brand && <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>({c.brand})</span>}
+                    </div>
+                    <span style={{ fontSize: '0.8rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
+                      {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                    Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
+                  </div>
+
+                  {/* Chips für neue Eigenschaften */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
+                    {c.length && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>📏 {c.length}</span>}
+                    {c.color && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🎨 {c.color}</span>}
+                    {c.condition && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>✨ {c.condition}</span>}
+                    {c.material && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🧵 {c.material}</span>}
+                    {c.cableStandard1 && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>💻 Std. 1: {c.cableStandard1}</span>}
+                    {c.cableStandard2 && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>💻 Std. 2: {c.cableStandard2}</span>}
+                    {c.dataRate && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>⚡ {c.dataRate}</span>}
+                    {c.chargingPower && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🔌 {c.chargingPower}</span>}
+                    
+                    {c.additionalProperties && Object.entries(c.additionalProperties).map(([propId, val]) => {
+                      const propDef = customProperties.find(p => p.id === propId);
+                      const label = propDef ? propDef.label : propId;
+                      return val ? (
+                        <span key={propId} style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                          🏷️ {label}: {val}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '0.5rem', justifyContent: 'flex-end' }}>
+                    <button onClick={(e) => { e.stopPropagation(); setReassigningCableId(c.id); setActiveTab('scan'); startCamera(); }} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                      <RefreshCw size={12} /> Sticker ersetzen
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDuplicateCable(c); }} style={{ background: 'none', color: 'var(--success)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+                      <Copy size={12} /> Duplizieren
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: CHARGERS */}
+      {activeTab === 'chargers' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <form onSubmit={handleCreateCable} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <h3>Ladegerät anlegen</h3>
+            <input type="text" placeholder="Name (z.B. Anker 65W)" value={cabName} onChange={e => setCabName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
+            
+
+
+            {/* Hierarchische Lagerort-Auswahl */}
+            {renderLocationTreeSelector(cabLocParentId, setCabLocParentId, cabLocation, setCabLocation, 'Lagerort')}
+
+            {/* Foto beschreiben & hinzufügen */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Beschreibung (z.B. Frontansicht)" 
+                    value={tempCabImageLabel} 
+                    onChange={e => setTempCabImageLabel(e.target.value)} 
+                    style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
+                    }} style={{ display: 'none' }} id="charger-cam-upload" />
+                    <label htmlFor="charger-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
+                      📷 Kamera
+                    </label>
+
+                    <input type="file" accept="image/*" onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
+                    }} style={{ display: 'none' }} id="charger-gal-upload" />
+                    <label htmlFor="charger-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
+                      🖼️ Galerie
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div>
+                {/* Platzhalter */}
+              </div>
+            </div>
+
+            {/* Preview of uploaded images in Charger Form */}
+            {cabImages.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                {cabImages.map(img => (
+                  <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
+                    <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
+                      {img.label}
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveImageAttachment('cable', img.id)} 
+                      style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+
+            {/* Multi-Output Details */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Leistungsausgänge (Ports):</span>
+              {ports.map((p, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <select value={p.portType} onChange={e => {
+                    const updated = [...ports];
+                    updated[idx].portType = e.target.value;
+                    setPorts(updated);
+                  }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: 'none' }}>
+                    <option value="USB-C">USB-C</option>
+                    <option value="USB-A">USB-A</option>
+                    <option value="DC-Jack">DC-Jack</option>
+                  </select>
+                  <input type="number" placeholder="Volt" value={p.voltage} onChange={e => {
+                    const updated = [...ports];
+                    updated[idx].voltage = Number(e.target.value);
+                    setPorts(updated);
+                  }} style={{ width: '60px', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: 'none' }} />
+                  <span>V</span>
+                  <input type="number" placeholder="Ampere" step="0.1" value={p.amperage} onChange={e => {
+                    const updated = [...ports];
+                    updated[idx].amperage = Number(e.target.value);
+                    setPorts(updated);
+                  }} style={{ width: '60px', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: 'none' }} />
+                  <span>A</span>
+                </div>
+              ))}
+              <button type="button" onClick={() => setPorts([...ports, { voltage: 5, amperage: 2, portType: 'USB-C' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.5rem' }}>+ Weiteren Port hinzufügen</button>
+            </div>
+
+            <button type="submit" className="btn-primary" onClick={() => setCabIsMulti(true)}>Ladegerät anlegen</button>
+          </form>
+
+          {/* List Chargers */}
+          <div className="glass-panel" style={{ padding: '1.25rem' }}>
+            <h3>Registrierte Ladegeräte</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+              {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).map(c => (
+                <div 
+                  key={c.id} 
+                  onClick={() => setSelectedCableDetails(c)}
+                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <strong>{c.name}</strong>
                     <span style={{ fontSize: '0.8rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>{c.connectorType}</span>
@@ -723,13 +1832,22 @@ export default function App() {
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                     Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
                   </div>
+                  {c.powerOutputs && c.powerOutputs.length > 0 && (
+                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                      {c.powerOutputs.map((p, i) => (
+                        <span key={i} style={{ fontSize: '0.7rem', background: 'var(--accent-glow)', color: 'var(--accent-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                          {p.portType}: {p.voltage}V @ {p.amperage}A
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
-                  {/* Actions: Klonen (Schritt 20) & Ummampen (Schritt 19) */}
+                  {/* Actions */}
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '0.5rem', justifyContent: 'flex-end' }}>
-                    <button onClick={() => { setReassigningCableId(c.id); setActiveTab('scan'); startCamera(); }} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <button onClick={(e) => { e.stopPropagation(); setReassigningCableId(c.id); setActiveTab('scan'); startCamera(); }} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
                       <RefreshCw size={12} /> Sticker ersetzen
                     </button>
-                    <button onClick={() => handleDuplicateCable(c)} style={{ background: 'none', color: 'var(--success)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <button onClick={(e) => { e.stopPropagation(); handleDuplicateCable(c); }} style={{ background: 'none', color: 'var(--success)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
                       <Copy size={12} /> Duplizieren
                     </button>
                   </div>
@@ -744,7 +1862,7 @@ export default function App() {
       {activeTab === 'devices' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateDevice} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3>Neues Gerät anlegen</h3>
+            <h3>Gerät anlegen</h3>
             <input type="text" placeholder="Name" value={devName} onChange={e => setDevName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
             <input type="text" placeholder="Hersteller" value={devBrand} onChange={e => setDevBrand(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
             
@@ -778,6 +1896,68 @@ export default function App() {
                 </select>
               </div>
             </div>
+
+            {/* Hierarchische Lagerort-Auswahl für Geräte */}
+            {renderLocationTreeSelector(devLocParentId, setDevLocParentId, devLocation, setDevLocation, 'Lagerort des Geräts')}
+
+            {/* Foto beschreiben & hinzufügen für Geräte */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Beschreibung (z.B. Frontansicht)" 
+                    value={tempDevImageLabel} 
+                    onChange={e => setTempDevImageLabel(e.target.value)} 
+                    style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageAttachmentUpload('device', file, tempDevImageLabel);
+                    }} style={{ display: 'none' }} id="dev-cam-upload" />
+                    <label htmlFor="dev-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
+                      📷 Kamera
+                    </label>
+
+                    <input type="file" accept="image/*" onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageAttachmentUpload('device', file, tempDevImageLabel);
+                    }} style={{ display: 'none' }} id="dev-gal-upload" />
+                    <label htmlFor="dev-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
+                      🖼️ Galerie
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div>
+                {/* Platzhalter */}
+              </div>
+            </div>
+
+            {/* Preview of uploaded images in Device Form */}
+            {devImages.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                {devImages.map(img => (
+                  <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
+                    <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
+                      {img.label}
+                    </span>
+                    <button 
+                      type="button" 
+                      onClick={() => handleRemoveImageAttachment('device', img.id)} 
+                      style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+
             <button type="submit" className="btn-primary">Hinzufügen</button>
           </form>
 
@@ -801,42 +1981,194 @@ export default function App() {
         </div>
       )}
 
-      {/* TAB: COMPATIBILITY */}
-      {activeTab === 'compatibility' && (
+      {/* TAB: SETTINGS */}
+      {activeTab === 'settings' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3>Smarter Lade-Check</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Gerät</label>
-                <select value={selectedDeviceId} onChange={e => setSelectedDeviceId(e.target.value)} style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)' }}>
-                  <option value="">-- Gerät wählen --</option>
-                  {devices.map(d => (
-                    <option key={d.id} value={d.id}>{d.name} ({d.requiredVoltage}V @ {d.requiredAmperage}A)</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kabel / Lader</label>
-                <select value={selectedCableId} onChange={e => setSelectedCableId(e.target.value)} style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)' }}>
-                  <option value="">-- Kabel wählen --</option>
-                  {cables.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <h3>Einstellungen</h3>
+            
+            {/* Dark Mode Switcher */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border-glass)' }}>
+              <span>Dark Theme aktivieren</span>
+              <button 
+                onClick={() => setDarkMode(!darkMode)}
+                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer' }}
+              >
+                {darkMode ? 'Aktiviert (Dunkel)' : 'Deaktiviert (Hell)'}
+              </button>
             </div>
-            <button onClick={handleCheckCompatibility} className="btn-primary" style={{ marginTop: '0.5rem' }}>Prüfen</button>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
+              <span>Daten-Export (.json)</span>
+              <button onClick={handleExportData} className="btn-primary" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
+                Exportieren
+              </button>
+            </div>
           </div>
 
-          {compatResult && (
-            <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '6px solid', borderLeftColor: compatResult.status === 'COMPATIBLE' ? 'var(--success)' : 'var(--error)' }}>
-              <h4>{compatResult.status === 'COMPATIBLE' ? 'Kompatibel ✔' : 'Inkompatibel ❌'}</h4>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-                {'message' in compatResult ? compatResult.message : 'Dieses Ladegerät kann das Gerät laden.'}
-              </p>
+          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <h3>Eigenschaften verwalten</h3>
+
+            {/* Formular für neue benutzerdefinierte Eigenschaftskategorie */}
+            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1rem' }}>
+              <input
+                type="text"
+                placeholder="Neue Kategorie (z.B. Garantiezeit)"
+                value={newCustomPropLabel}
+                onChange={e => setNewCustomPropLabel(e.target.value)}
+                style={{ flex: 1, padding: '0.5rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}
+              />
+              <button onClick={handleCreateCustomProperty} className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
+                Kategorie anlegen
+              </button>
             </div>
-          )}
+
+            {/* Liste aller Kategorien zum Hinzufügen/Löschen von Werten */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+              
+              {/* 1. Kabel-Standards (Gruppiert) */}
+              <div style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+                <strong style={{ fontSize: '0.9rem' }}>Kabel-Standards (Gruppiert nach Steckertyp)</strong>
+                {Object.entries(cableStandardGroups).map(([family, values]) => (
+                  <div key={family} style={{ marginTop: '0.5rem', paddingLeft: '0.75rem', borderLeft: '2px solid var(--accent-primary)' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', color: 'var(--accent-primary)' }}>{family}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
+                      {values.map(val => (
+                        <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                          {val}
+                          <button onClick={() => handleRemoveCableStandard(family, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
+                      <input
+                        type="text"
+                        placeholder={`Standard für ${family}...`}
+                        id={`input-standard-${family}`}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const inputEl = e.currentTarget;
+                            handleAddCableStandard(family, inputEl.value);
+                            inputEl.value = '';
+                          }
+                        }}
+                        style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
+                      />
+                      <button 
+                        onClick={e => {
+                          const inputEl = document.getElementById(`input-standard-${family}`) as HTMLInputElement;
+                          if (inputEl) {
+                            handleAddCableStandard(family, inputEl.value);
+                            inputEl.value = '';
+                          }
+                        }}
+                        style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 2. Standard Eigenschaften */}
+              {[
+                { label: 'Marke', list: brands, setList: setBrands, key: 'list_brands' },
+                { label: 'Kabellänge', list: lengths, setList: setLengths, key: 'list_lengths' },
+                { label: 'Farbe', list: colors, setList: setColors, key: 'list_colors' },
+                { label: 'Zustand', list: conditions, setList: setConditions, key: 'list_conditions' },
+                { label: 'Material', list: materials, setList: setMaterials, key: 'list_materials' },
+                { label: 'Datenrate', list: dataRates, setList: setDataRates, key: 'list_data_rates' },
+                { label: 'Ladeleistung', list: chargingPowers, setList: setChargingPowers, key: 'list_charging_powers' },
+                { label: 'Stecker-Typen', list: connectors, setList: setConnectors, key: 'list_connectors' }
+              ].map(prop => (
+                <div key={prop.label} style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+                  <strong style={{ fontSize: '0.9rem' }}>{prop.label}</strong>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
+                    {prop.list.map(val => (
+                      <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        {val}
+                        <button onClick={() => handleRemovePropValue(prop.key, prop.list, prop.setList, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
+                    <input
+                      type="text"
+                      placeholder="Neuer Wert..."
+                      id={`input-val-${prop.label}`}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          const inputEl = e.currentTarget;
+                          handleAddPropValue(prop.key, prop.list, prop.setList, inputEl.value);
+                          inputEl.value = '';
+                        }
+                      }}
+                      style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
+                    />
+                    <button 
+                      onClick={e => {
+                        const inputEl = document.getElementById(`input-val-${prop.label}`) as HTMLInputElement;
+                        if (inputEl) {
+                          handleAddPropValue(prop.key, prop.list, prop.setList, inputEl.value);
+                          inputEl.value = '';
+                        }
+                      }}
+                      style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* 3. Custom Eigenschaften */}
+              {customProperties.map(prop => (
+                <div key={prop.id} style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ fontSize: '0.9rem', color: 'var(--accent-secondary)' }}>🏷️ {prop.label} (Eigene Kategorie)</strong>
+                    <button onClick={() => handleDeleteCustomProperty(prop.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '0.75rem', cursor: 'pointer' }}>Kategorie löschen</button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
+                    {prop.values.map(val => (
+                      <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        {val}
+                        <button onClick={() => handleRemoveCustomPropValue(prop.id, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
+                    <input
+                      type="text"
+                      placeholder="Neuer Wert..."
+                      id={`input-val-${prop.id}`}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          const inputEl = e.currentTarget;
+                          handleAddCustomPropValue(prop.id, inputEl.value);
+                          inputEl.value = '';
+                        }
+                      }}
+                      style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
+                    />
+                    <button 
+                      onClick={e => {
+                        const inputEl = document.getElementById(`input-val-${prop.id}`) as HTMLInputElement;
+                        if (inputEl) {
+                          handleAddCustomPropValue(prop.id, inputEl.value);
+                          inputEl.value = '';
+                        }
+                      }}
+                      style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+            </div>
+          </div>
         </div>
       )}
 
@@ -856,13 +2188,175 @@ export default function App() {
         })}
       </div>
 
+      {/* CABLE DETAILS MODAL */}
+      {selectedCableDetails && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(8px)', padding: '1rem' }}>
+          <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.5rem', width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem' }}>
+              <h3 style={{ margin: 0 }}>Kabel-Details</h3>
+              <button onClick={() => setSelectedCableDetails(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
+            </div>
+
+            {/* Bildergalerie */}
+            {((selectedCableDetails.images && selectedCableDetails.images.length > 0) || selectedCableDetails.imageUrl) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <strong>Fotos:</strong>
+                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                  {/* Backward compatibility with old imageUrl */}
+                  {selectedCableDetails.imageUrl && !selectedCableDetails.images?.some(i => i.url === selectedCableDetails.imageUrl) && (
+                    <div style={{ flexShrink: 0, width: '120px', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <img 
+                        src={selectedCableDetails.imageUrl} 
+                        alt="Hauptbild" 
+                        onClick={() => window.open(selectedCableDetails.imageUrl, '_blank')}
+                        style={{ width: '120px', height: '90px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-glass)', cursor: 'zoom-in' }} 
+                      />
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center' }}>Hauptbild</span>
+                    </div>
+                  )}
+                  {selectedCableDetails.images?.map(img => (
+                    <div key={img.id} style={{ flexShrink: 0, width: '120px', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <img 
+                        src={img.url} 
+                        alt={img.label} 
+                        onClick={() => window.open(img.url, '_blank')}
+                        style={{ width: '120px', height: '90px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-glass)', cursor: 'zoom-in' }} 
+                      />
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{img.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div><strong>Name:</strong> {selectedCableDetails.name}</div>
+              {selectedCableDetails.brand && <div><strong>Marke:</strong> {selectedCableDetails.brand}</div>}
+              <div>
+                <strong>Stecker-Typen:</strong> {selectedCableDetails.connectorType1 && selectedCableDetails.connectorType2 
+                  ? `${selectedCableDetails.connectorType1} ↔ ${selectedCableDetails.connectorType2}` 
+                  : selectedCableDetails.connectorType}
+              </div>
+              {selectedCableDetails.cableStandard1 && <div><strong>Kabel-Standard 1:</strong> {selectedCableDetails.cableStandard1}</div>}
+              {selectedCableDetails.cableStandard2 && <div><strong>Kabel-Standard 2:</strong> {selectedCableDetails.cableStandard2}</div>}
+              {selectedCableDetails.length && <div><strong>Kabellänge:</strong> {selectedCableDetails.length}</div>}
+              {selectedCableDetails.color && <div><strong>Farbe:</strong> {selectedCableDetails.color}</div>}
+              {selectedCableDetails.material && <div><strong>Material:</strong> {selectedCableDetails.material}</div>}
+              {selectedCableDetails.condition && <div><strong>Zustand:</strong> {selectedCableDetails.condition}</div>}
+              {selectedCableDetails.dataRate && <div><strong>Datenübertragungsrate:</strong> {selectedCableDetails.dataRate}</div>}
+              {selectedCableDetails.chargingPower && <div><strong>Ladeleistung:</strong> {selectedCableDetails.chargingPower}</div>}
+              <div><strong>Lagerort:</strong> {selectedCableDetails.locationId ? buildLocationPath(selectedCableDetails.locationId, locations) : 'Kein Ort'}</div>
+              
+              {/* Eigene Eigenschaften anzeigen */}
+              {selectedCableDetails.additionalProperties && Object.entries(selectedCableDetails.additionalProperties).map(([propId, val]) => {
+                const propDef = customProperties.find(p => p.id === propId);
+                const label = propDef ? propDef.label : propId;
+                return val ? (
+                  <div key={propId}><strong>{label}:</strong> {val}</div>
+                ) : null;
+              })}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+              <button 
+                onClick={() => {
+                  setReassigningCableId(selectedCableDetails.id);
+                  setSelectedCableDetails(null);
+                  setActiveTab('scan');
+                  startCamera();
+                }} 
+                className="btn-primary" 
+                style={{ flex: 1, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+              >
+                <RefreshCw size={12} /> Sticker ersetzen
+              </button>
+              <button 
+                onClick={() => {
+                  handleDuplicateCable(selectedCableDetails);
+                  setSelectedCableDetails(null);
+                }} 
+                className="btn-primary" 
+                style={{ flex: 1, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', background: 'var(--success)' }}
+              >
+                <Copy size={12} /> Duplizieren
+              </button>
+              <button 
+                onClick={() => {
+                  handleDeleteCable(selectedCableDetails.id);
+                  setSelectedCableDetails(null);
+                }} 
+                className="btn-primary" 
+                style={{ flex: 1, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', background: 'var(--error)' }}
+              >
+                <Trash2 size={12} /> Löschen
+              </button>
+            </div>
+            <button onClick={() => setSelectedCableDetails(null)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>Schließen</button>
+          </div>
+        </div>
+      )}
+
+      {/* DEVICE DETAILS MODAL */}
+      {selectedDeviceDetails && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(8px)', padding: '1rem' }}>
+          <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.5rem', width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem' }}>
+              <h3 style={{ margin: 0 }}>Geräte-Details</h3>
+              <button onClick={() => setSelectedDeviceDetails(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
+            </div>
+
+            {/* Bildergalerie für Geräte */}
+            {selectedDeviceDetails.images && selectedDeviceDetails.images.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <strong>Fotos:</strong>
+                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
+                  {selectedDeviceDetails.images.map(img => (
+                    <div key={img.id} style={{ flexShrink: 0, width: '120px', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <img 
+                        src={img.url} 
+                        alt={img.label} 
+                        onClick={() => window.open(img.url, '_blank')}
+                        style={{ width: '120px', height: '90px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-glass)', cursor: 'zoom-in' }} 
+                      />
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{img.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div><strong>Name:</strong> {selectedDeviceDetails.name}</div>
+              {selectedDeviceDetails.manufacturer && <div><strong>Hersteller:</strong> {selectedDeviceDetails.manufacturer}</div>}
+              <div><strong>Anschluss:</strong> {selectedDeviceDetails.requiredConnectorType || 'Nicht spezifiziert'}</div>
+              <div><strong>Benötigte Leistung:</strong> {selectedDeviceDetails.requiredVoltage}V @ {selectedDeviceDetails.requiredAmperage}A</div>
+              <div><strong>Lagerort:</strong> {selectedDeviceDetails.locationId ? buildLocationPath(selectedDeviceDetails.locationId, locations) : 'Kein Ort'}</div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+              <button 
+                onClick={() => {
+                  handleDeleteDevice(selectedDeviceDetails.id);
+                  setSelectedDeviceDetails(null);
+                }} 
+                className="btn-primary" 
+                style={{ flex: 1, background: 'var(--error)', fontSize: '0.8rem' }}
+              >
+                Gerät löschen
+              </button>
+              <button onClick={() => setSelectedDeviceDetails(null)} style={{ flex: 1, background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>Schließen</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
           <ShieldCheck size={14} style={{ color: 'var(--success)' }} />
           <span>Lokaler Gast-Modus aktiv</span>
         </div>
-        <div>Cable Guy MVP v0.1.0</div>
+        <div>Kabel Manager v.1.1.0 by Andreas Bartel</div>
       </footer>
     </div>
   );

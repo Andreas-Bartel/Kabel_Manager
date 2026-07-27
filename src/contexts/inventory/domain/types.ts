@@ -1,3 +1,9 @@
+export interface ImageAttachment {
+  id: string;
+  url: string;   // Base64 string of compressed image
+  label: string; // User-defined label
+}
+
 export interface PowerOutput {
   voltage: number; // in Volt (V)
   amperage: number; // in Ampere (A)
@@ -19,6 +25,21 @@ export interface Cable {
   userId?: string; // Eigentümer des Kabels
   createdAt: string;
   updatedAt: string;
+  
+  // Neue Eigenschaften für Version 2 (Schritt 5)
+  cableStandard1?: string;
+  cableStandard2?: string;
+  length?: string;
+  color?: string;
+  condition?: string;
+  material?: string;
+  dataRate?: string;
+  chargingPower?: string;
+  brand?: string;
+  connectorType1?: string;
+  connectorType2?: string;
+  additionalProperties?: Record<string, string>;
+  images?: ImageAttachment[];
 }
 
 export interface Device {
@@ -32,6 +53,7 @@ export interface Device {
   compatibleCableIds?: string[]; // IDs von kompatiblen Kabeln
   userId?: string; // Eigentümer des Geräts
   createdAt: string;
+  images?: ImageAttachment[];
 }
 
 export interface StorageLocation {

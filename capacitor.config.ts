@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.cableguy.app',
-  appName: 'Cable Guy',
+  appName: 'Kabel Manager',
   webDir: 'dist',
   server: {
     androidScheme: 'https'
