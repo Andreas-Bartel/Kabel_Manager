@@ -105,6 +105,15 @@ export default function App() {
   const [tempDevImageLabel, setTempDevImageLabel] = useState('Gesamtansicht');
   const [cabLocParentId, setCabLocParentId] = useState<string | undefined>(undefined);
   const [devLocParentId, setDevLocParentId] = useState<string | undefined>(undefined);
+  const [settingsView, setSettingsView] = useState<'menu' | 'layout' | 'properties' | 'export' | 'about'>('menu');
+
+  // Setze den Einstellungs-Tab bei Wechsel zurück auf das Hauptmenü
+  useEffect(() => {
+    if (activeTab !== 'settings') {
+      setSettingsView('menu');
+    }
+  }, [activeTab]);
+
 
   // Option lists for Cable attributes
   const [cableStandardGroups, setCableStandardGroups] = useState<Record<string, string[]>>(() => {
@@ -1984,191 +1993,322 @@ export default function App() {
       {/* TAB: SETTINGS */}
       {activeTab === 'settings' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <h3>Einstellungen</h3>
-            
-            {/* Dark Mode Switcher */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border-glass)' }}>
-              <span>Dark Theme aktivieren</span>
-              <button 
-                onClick={() => setDarkMode(!darkMode)}
-                style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer' }}
-              >
-                {darkMode ? 'Aktiviert (Dunkel)' : 'Deaktiviert (Hell)'}
-              </button>
-            </div>
+          
+          {/* 1. MAIN SETTINGS MENU */}
+          {settingsView === 'menu' && (
+            <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h3>Einstellungen</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button 
+                  onClick={() => setSettingsView('layout')}
+                  className="tile-btn"
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
+                    <Sun size={18} style={{ color: 'var(--accent-primary)' }} />
+                    Layout (Theme)
+                  </span>
+                  <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
+                </button>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
-              <span>Daten-Export (.json)</span>
-              <button onClick={handleExportData} className="btn-primary" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
-                Exportieren
-              </button>
-            </div>
-          </div>
+                <button 
+                  onClick={() => setSettingsView('properties')}
+                  className="tile-btn"
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
+                    <Layers size={18} style={{ color: 'var(--accent-secondary)' }} />
+                    Eigenschaften verwalten
+                  </span>
+                  <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
+                </button>
 
-          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <h3>Eigenschaften verwalten</h3>
+                <button 
+                  onClick={() => setSettingsView('export')}
+                  className="tile-btn"
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
+                    <Upload size={18} style={{ color: 'var(--success)' }} />
+                    Datenexport
+                  </span>
+                  <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
+                </button>
 
-            {/* Formular für neue benutzerdefinierte Eigenschaftskategorie */}
-            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1rem' }}>
-              <input
-                type="text"
-                placeholder="Neue Kategorie (z.B. Garantiezeit)"
-                value={newCustomPropLabel}
-                onChange={e => setNewCustomPropLabel(e.target.value)}
-                style={{ flex: 1, padding: '0.5rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}
-              />
-              <button onClick={handleCreateCustomProperty} className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
-                Kategorie anlegen
-              </button>
-            </div>
-
-            {/* Liste aller Kategorien zum Hinzufügen/Löschen von Werten */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-              
-              {/* 1. Kabel-Standards (Gruppiert) */}
-              <div style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
-                <strong style={{ fontSize: '0.9rem' }}>Kabel-Standards (Gruppiert nach Steckertyp)</strong>
-                {Object.entries(cableStandardGroups).map(([family, values]) => (
-                  <div key={family} style={{ marginTop: '0.5rem', paddingLeft: '0.75rem', borderLeft: '2px solid var(--accent-primary)' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', color: 'var(--accent-primary)' }}>{family}</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
-                      {values.map(val => (
-                        <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                          {val}
-                          <button onClick={() => handleRemoveCableStandard(family, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
-                        </span>
-                      ))}
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
-                      <input
-                        type="text"
-                        placeholder={`Standard für ${family}...`}
-                        id={`input-standard-${family}`}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            const inputEl = e.currentTarget;
-                            handleAddCableStandard(family, inputEl.value);
-                            inputEl.value = '';
-                          }
-                        }}
-                        style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
-                      />
-                      <button 
-                        onClick={e => {
-                          const inputEl = document.getElementById(`input-standard-${family}`) as HTMLInputElement;
-                          if (inputEl) {
-                            handleAddCableStandard(family, inputEl.value);
-                            inputEl.value = '';
-                          }
-                        }}
-                        style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', cursor: 'pointer' }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                <button 
+                  onClick={() => setSettingsView('about')}
+                  className="tile-btn"
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
+                    <Info size={18} style={{ color: 'var(--accent-primary)' }} />
+                    Über die App
+                  </span>
+                  <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
+                </button>
               </div>
-
-              {/* 2. Standard Eigenschaften */}
-              {[
-                { label: 'Marke', list: brands, setList: setBrands, key: 'list_brands' },
-                { label: 'Kabellänge', list: lengths, setList: setLengths, key: 'list_lengths' },
-                { label: 'Farbe', list: colors, setList: setColors, key: 'list_colors' },
-                { label: 'Zustand', list: conditions, setList: setConditions, key: 'list_conditions' },
-                { label: 'Material', list: materials, setList: setMaterials, key: 'list_materials' },
-                { label: 'Datenrate', list: dataRates, setList: setDataRates, key: 'list_data_rates' },
-                { label: 'Ladeleistung', list: chargingPowers, setList: setChargingPowers, key: 'list_charging_powers' },
-                { label: 'Stecker-Typen', list: connectors, setList: setConnectors, key: 'list_connectors' }
-              ].map(prop => (
-                <div key={prop.label} style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
-                  <strong style={{ fontSize: '0.9rem' }}>{prop.label}</strong>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
-                    {prop.list.map(val => (
-                      <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                        {val}
-                        <button onClick={() => handleRemovePropValue(prop.key, prop.list, prop.setList, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
-                      </span>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
-                    <input
-                      type="text"
-                      placeholder="Neuer Wert..."
-                      id={`input-val-${prop.label}`}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          const inputEl = e.currentTarget;
-                          handleAddPropValue(prop.key, prop.list, prop.setList, inputEl.value);
-                          inputEl.value = '';
-                        }
-                      }}
-                      style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
-                    />
-                    <button 
-                      onClick={e => {
-                        const inputEl = document.getElementById(`input-val-${prop.label}`) as HTMLInputElement;
-                        if (inputEl) {
-                          handleAddPropValue(prop.key, prop.list, prop.setList, inputEl.value);
-                          inputEl.value = '';
-                        }
-                      }}
-                      style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', cursor: 'pointer' }}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {/* 3. Custom Eigenschaften */}
-              {customProperties.map(prop => (
-                <div key={prop.id} style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: '0.9rem', color: 'var(--accent-secondary)' }}>🏷️ {prop.label} (Eigene Kategorie)</strong>
-                    <button onClick={() => handleDeleteCustomProperty(prop.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '0.75rem', cursor: 'pointer' }}>Kategorie löschen</button>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
-                    {prop.values.map(val => (
-                      <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                        {val}
-                        <button onClick={() => handleRemoveCustomPropValue(prop.id, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
-                      </span>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
-                    <input
-                      type="text"
-                      placeholder="Neuer Wert..."
-                      id={`input-val-${prop.id}`}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          const inputEl = e.currentTarget;
-                          handleAddCustomPropValue(prop.id, inputEl.value);
-                          inputEl.value = '';
-                        }
-                      }}
-                      style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
-                    />
-                    <button 
-                      onClick={e => {
-                        const inputEl = document.getElementById(`input-val-${prop.id}`) as HTMLInputElement;
-                        if (inputEl) {
-                          handleAddCustomPropValue(prop.id, inputEl.value);
-                          inputEl.value = '';
-                        }
-                      }}
-                      style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', cursor: 'pointer' }}
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
-
             </div>
-          </div>
+          )}
+
+          {/* 2. SUB-VIEW: LAYOUT */}
+          {settingsView === 'layout' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <button 
+                onClick={() => setSettingsView('menu')} 
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', padding: 0 }}
+              >
+                <ArrowLeft size={16} /> Zurück zu Einstellungen
+              </button>
+              <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <h3>Layout (Theme)</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
+                  <span>Dark Theme aktivieren</span>
+                  <button 
+                    onClick={() => setDarkMode(!darkMode)}
+                    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                  >
+                    {darkMode ? 'Aktiviert (Dunkel)' : 'Deaktiviert (Hell)'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 3. SUB-VIEW: PROPERTIES */}
+          {settingsView === 'properties' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <button 
+                onClick={() => setSettingsView('menu')} 
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', padding: 0 }}
+              >
+                <ArrowLeft size={16} /> Zurück zu Einstellungen
+              </button>
+              <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <h3>Eigenschaften verwalten</h3>
+
+                {/* Formular für neue benutzerdefinierte Eigenschaftskategorie */}
+                <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Neue Kategorie (z.B. Garantiezeit)"
+                    value={newCustomPropLabel}
+                    onChange={e => setNewCustomPropLabel(e.target.value)}
+                    style={{ flex: 1, padding: '0.5rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}
+                  />
+                  <button onClick={handleCreateCustomProperty} className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
+                    Kategorie anlegen
+                  </button>
+                </div>
+
+                {/* Liste aller Kategorien zum Hinzufügen/Löschen von Werten */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                  
+                  {/* 1. Kabel-Standards (Gruppiert) */}
+                  <div style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+                    <strong style={{ fontSize: '0.9rem' }}>Kabel-Standards (Gruppiert nach Steckertyp)</strong>
+                    {Object.entries(cableStandardGroups).map(([family, values]) => (
+                      <div key={family} style={{ marginTop: '0.5rem', paddingLeft: '0.75rem', borderLeft: '2px solid var(--accent-primary)' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', color: 'var(--accent-primary)' }}>{family}</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
+                          {values.map(val => (
+                            <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                              {val}
+                              <button onClick={() => handleRemoveCableStandard(family, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
+                            </span>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
+                          <input
+                            type="text"
+                            placeholder={`Standard für ${family}...`}
+                            id={`input-standard-${family}`}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                const inputEl = e.currentTarget;
+                                handleAddCableStandard(family, inputEl.value);
+                                inputEl.value = '';
+                              }
+                            }}
+                            style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
+                          />
+                          <button 
+                            onClick={e => {
+                              const inputEl = document.getElementById(`input-standard-${family}`) as HTMLInputElement;
+                              if (inputEl) {
+                                handleAddCableStandard(family, inputEl.value);
+                                inputEl.value = '';
+                              }
+                            }}
+                            style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 2. Standard Eigenschaften */}
+                  {[
+                    { label: 'Marke', list: brands, setList: setBrands, key: 'list_brands' },
+                    { label: 'Kabellänge', list: lengths, setList: setLengths, key: 'list_lengths' },
+                    { label: 'Farbe', list: colors, setList: setColors, key: 'list_colors' },
+                    { label: 'Zustand', list: conditions, setList: setConditions, key: 'list_conditions' },
+                    { label: 'Material', list: materials, setList: setMaterials, key: 'list_materials' },
+                    { label: 'Datenrate', list: dataRates, setList: setDataRates, key: 'list_data_rates' },
+                    { label: 'Ladeleistung', list: chargingPowers, setList: setChargingPowers, key: 'list_charging_powers' },
+                    { label: 'Stecker-Typen', list: connectors, setList: setConnectors, key: 'list_connectors' }
+                  ].map(prop => (
+                    <div key={prop.label} style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+                      <strong style={{ fontSize: '0.9rem' }}>{prop.label}</strong>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
+                        {prop.list.map(val => (
+                          <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            {val}
+                            <button onClick={() => handleRemovePropValue(prop.key, prop.list, prop.setList, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
+                        <input
+                          type="text"
+                          placeholder="Neuer Wert..."
+                          id={`input-val-${prop.label}`}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              const inputEl = e.currentTarget;
+                              handleAddPropValue(prop.key, prop.list, prop.setList, inputEl.value);
+                              inputEl.value = '';
+                            }
+                          }}
+                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
+                        />
+                        <button 
+                          onClick={e => {
+                            const inputEl = document.getElementById(`input-val-${prop.label}`) as HTMLInputElement;
+                            if (inputEl) {
+                              handleAddPropValue(prop.key, prop.list, prop.setList, inputEl.value);
+                              inputEl.value = '';
+                            }
+                          }}
+                          style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* 3. Custom Eigenschaften */}
+                  {customProperties.map(prop => (
+                    <div key={prop.id} style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--accent-secondary)' }}>🏷️ {prop.label} (Eigene Kategorie)</strong>
+                        <button onClick={() => handleDeleteCustomProperty(prop.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '0.75rem', cursor: 'pointer' }}>Kategorie löschen</button>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
+                        {prop.values.map(val => (
+                          <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            {val}
+                            <button onClick={() => handleRemoveCustomPropValue(prop.id, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
+                        <input
+                          type="text"
+                          placeholder="Neuer Wert..."
+                          id={`input-val-${prop.id}`}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              const inputEl = e.currentTarget;
+                              handleAddCustomPropValue(prop.id, inputEl.value);
+                              inputEl.value = '';
+                            }
+                          }}
+                          style={{ flex: 1, fontSize: '0.75rem', padding: '0.25rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)' }}
+                        />
+                        <button 
+                          onClick={e => {
+                            const inputEl = document.getElementById(`input-val-${prop.id}`) as HTMLInputElement;
+                            if (inputEl) {
+                              handleAddCustomPropValue(prop.id, inputEl.value);
+                              inputEl.value = '';
+                            }
+                          }}
+                          style={{ fontSize: '0.75rem', padding: '0.1rem 0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 4. SUB-VIEW: EXPORT */}
+          {settingsView === 'export' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <button 
+                onClick={() => setSettingsView('menu')} 
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', padding: 0 }}
+              >
+                <ArrowLeft size={16} /> Zurück zu Einstellungen
+              </button>
+              <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <h3>Datenexport</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+                    Exportiere deine gesamten Daten (Kabel, Ladegeräte, Geräte und Lagerorte) in eine lokale JSON-Datei zur Backup-Sicherung.
+                  </p>
+                  <button onClick={handleExportData} className="btn-primary" style={{ width: '100%', padding: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <Upload size={16} /> Exportieren (.json)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 5. SUB-VIEW: ABOUT */}
+          {settingsView === 'about' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <button 
+                onClick={() => setSettingsView('menu')} 
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem', padding: 0 }}
+              >
+                <ArrowLeft size={16} /> Zurück zu Einstellungen
+              </button>
+              <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
+                <h3 style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem', margin: 0 }}>Über die App</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', fontSize: '0.9rem' }}>
+                  <div>
+                    <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Verantwortlicher:</strong>
+                    <div style={{ marginTop: '0.2rem', fontWeight: 600 }}>Andreas Bartel</div>
+                  </div>
+                  
+                  <div>
+                    <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Kontakt / Support:</strong>
+                    <div style={{ marginTop: '0.2rem' }}>
+                      <a 
+                        href="mailto:workandbartel@gmail.com" 
+                        style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                      >
+                        workandbartel@gmail.com
+                      </a>
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div>Kabel Manager v1.2.0</div>
+                    <div>Lokaler Gast-Modus aktiv</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2349,15 +2489,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* Footer */}
-      <footer style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
-          <ShieldCheck size={14} style={{ color: 'var(--success)' }} />
-          <span>Lokaler Gast-Modus aktiv</span>
-        </div>
-        <div>Kabel Manager v.1.1.0 by Andreas Bartel</div>
-      </footer>
     </div>
   );
 }
