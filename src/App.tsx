@@ -14,6 +14,7 @@ import { ExportUserDataUseCase } from './contexts/inventory/application/ExportUs
 import { GetCableByQrPayloadUseCase } from './contexts/inventory/application/GetCableByQrPayloadUseCase';
 import { compressImage } from './contexts/shared/infrastructure/imageCompressor';
 import { uuidToBase64Url, base64UrlToUuid } from './contexts/labels/domain/types';
+import { App as CapApp } from '@capacitor/app';
 
 // Repositories & Use Cases initialisieren
 const cableRepo = new LocalStorageCableRepository();
@@ -239,6 +240,27 @@ export default function App() {
 
   const [selectedCableDetails, setSelectedCableDetails] = useState<Cable | null>(null);
   const [selectedDeviceDetails, setSelectedDeviceDetails] = useState<Device | null>(null);
+
+  // Handhabung des Android-Zurück-Buttons (Hardware Back Button)
+  useEffect(() => {
+    const handler = CapApp.addListener('backButton', () => {
+      if (selectedCableDetails) {
+        setSelectedCableDetails(null);
+      } else if (selectedDeviceDetails) {
+        setSelectedDeviceDetails(null);
+      } else if (activeTab === 'settings' && settingsView !== 'menu') {
+        setSettingsView('menu');
+      } else if (activeTab !== 'overview') {
+        setActiveTab('overview');
+      } else {
+        CapApp.exitApp();
+      }
+    });
+
+    return () => {
+      handler.then(h => h.remove());
+    };
+  }, [selectedCableDetails, selectedDeviceDetails, activeTab, settingsView]);
 
   const [newCustomPropLabel, setNewCustomPropLabel] = useState('');
   const [tempPropValues, setTempPropValues] = useState<Record<string, string>>({});
