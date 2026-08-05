@@ -25,6 +25,13 @@ export interface Cable {
   userId?: string; // Eigentümer des Kabels
   createdAt: string;
   updatedAt: string;
+
+  // Eigenschaften für Ladegeräte (Version 1.2.0)
+  chargerType?: 'only_ports' | 'only_fixed_cable' | 'hybrid';
+  fixedCableLength?: string;
+  fixedCablePower?: string;
+  fixedCableConnector?: string;
+
   
   // Neue Eigenschaften für Version 2 (Schritt 5)
   cableStandard1?: string;

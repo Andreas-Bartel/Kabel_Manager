@@ -70,9 +70,14 @@ export default function App() {
   const [cabIsMulti, setCabIsMulti] = useState(false);
   const [cabImage, setCabImage] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [ports, setPorts] = useState<{ voltage: number; amperage: number; portType: string }[]>([
-    { voltage: 5, amperage: 2, portType: 'USB-C' }
+  const [ports, setPorts] = useState<{ voltage: number; amperage: number; wattage: number; portType: string }[]>([
+    { voltage: 5, amperage: 2, wattage: 10, portType: 'USB-C' }
   ]);
+  const [cabChargerType, setCabChargerType] = useState<'only_ports' | 'only_fixed_cable' | 'hybrid'>('only_ports');
+  const [cabFixedLength, setCabFixedLength] = useState('');
+  const [cabFixedPower, setCabFixedPower] = useState('');
+  const [cabFixedConnector, setCabFixedConnector] = useState('USB-C');
+
 
   // Form States - Device
   const [devName, setDevName] = useState('');
@@ -649,14 +654,23 @@ export default function App() {
 
   const handleCreateCable = async (e: React.FormEvent) => {
     e.preventDefault();
-    const powerOutputs = cabIsMulti 
-      ? ports.map(p => ({ ...p, wattage: p.voltage * p.amperage, portType: p.portType as any }))
+    const powerOutputs = cabIsMulti && (cabChargerType === 'only_ports' || cabChargerType === 'hybrid')
+      ? ports.map(p => ({
+          voltage: p.voltage || 5,
+          amperage: p.amperage || (p.wattage / 5),
+          wattage: p.wattage || (p.voltage * p.amperage),
+          portType: p.portType as any
+        }))
       : undefined;
 
     const newCable: Cable = {
       id: generateUUID(),
       name: cabName,
-      connectorType: cabIsMulti ? (ports[0]?.portType as any || 'Other') : (cabConnectorType1 as any),
+      connectorType: cabIsMulti 
+        ? (cabChargerType === 'only_ports' 
+            ? (ports[0]?.portType as any || 'Other') 
+            : (cabFixedConnector as any))
+        : (cabConnectorType1 as any),
       locationId: cabLocation || undefined,
       isMultiOutput: cabIsMulti,
       powerOutputs,
@@ -665,6 +679,12 @@ export default function App() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       
+      // Eigenschaften für Ladegeräte (Version 1.2.0)
+      chargerType: cabIsMulti ? cabChargerType : undefined,
+      fixedCableLength: cabIsMulti && (cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') ? (cabFixedLength || undefined) : undefined,
+      fixedCablePower: cabIsMulti && (cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') ? (cabFixedPower || undefined) : undefined,
+      fixedCableConnector: cabIsMulti && (cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') ? (cabFixedConnector || undefined) : undefined,
+
       // Neue Eigenschaften (Schritt 5)
       cableStandard1: cabCableStandard1 || undefined,
       cableStandard2: cabCableStandard2 || undefined,
@@ -700,6 +720,11 @@ export default function App() {
     setCabConnectorType1('USB-C');
     setCabConnectorType2('USB-C');
     setCustomPropValues({});
+    setCabChargerType('only_ports');
+    setCabFixedLength('');
+    setCabFixedPower('');
+    setCabFixedConnector('USB-C');
+    setPorts([{ voltage: 5, amperage: 2, wattage: 10, portType: 'USB-C' }]);
     refreshData();
   };
 
@@ -1725,7 +1750,125 @@ export default function App() {
             <h3>Ladegerät anlegen</h3>
             <input type="text" placeholder="Name (z.B. Anker 65W)" value={cabName} onChange={e => setCabName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
             
+            {/* Typ-Auswahl des Ladegeräts */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Typ des Ladegeräts</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setCabChargerType('only_ports')}
+                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem', background: cabChargerType === 'only_ports' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  🔌 Nur Ports
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setCabChargerType('only_fixed_cable')}
+                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem', background: cabChargerType === 'only_fixed_cable' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  🪢 Festes Kabel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setCabChargerType('hybrid')}
+                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem', background: cabChargerType === 'hybrid' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  🎛️ Hybrid
+                </button>
+              </div>
+            </div>
 
+            {/* Sektion A: Fest verbautes Kabel */}
+            {(cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Eigenschaften des fest verbauten Kabels:</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Stecker-Typ</label>
+                    <select value={cabFixedConnector} onChange={e => setCabFixedConnector(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }}>
+                      <option value="USB-C">USB-C</option>
+                      <option value="Micro-USB">Micro-USB</option>
+                      <option value="Lightning">Lightning</option>
+                      <option value="DC-Jack">DC-Jack</option>
+                      <option value="Other">Andere</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Länge (z.B. 1.5m)</label>
+                    <input type="text" placeholder="1.5m" value={cabFixedLength} onChange={e => setCabFixedLength(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Leistung (z.B. 65W)</label>
+                    <input type="text" placeholder="65W" value={cabFixedPower} onChange={e => setCabFixedPower(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sektion B: Leistungsausgänge (Ports) */}
+            {(cabChargerType === 'only_ports' || cabChargerType === 'hybrid') && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Leistungsausgänge (Ports):</span>
+                {ports.map((p, idx) => (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 0.8fr 0.8fr auto', gap: '0.4rem', alignItems: 'center' }}>
+                    <select value={p.portType} onChange={e => {
+                      const updated = [...ports];
+                      updated[idx].portType = e.target.value;
+                      setPorts(updated);
+                    }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }}>
+                      <option value="USB-C">USB-C</option>
+                      <option value="USB-A">USB-A</option>
+                      <option value="DC-Jack">DC-Jack</option>
+                    </select>
+                    
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input type="number" placeholder="Watt" value={p.wattage || ''} onChange={e => {
+                        const w = Number(e.target.value);
+                        const updated = [...ports];
+                        updated[idx].wattage = w;
+                        if (updated[idx].voltage > 0) {
+                          updated[idx].amperage = parseFloat((w / updated[idx].voltage).toFixed(2));
+                        } else {
+                          updated[idx].voltage = 5;
+                          updated[idx].amperage = parseFloat((w / 5).toFixed(2));
+                        }
+                        setPorts(updated);
+                      }} style={{ width: '100%', padding: '0.4rem 1.1rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }} />
+                      <span style={{ position: 'absolute', right: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>W</span>
+                    </div>
+
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input type="number" placeholder="Volt" value={p.voltage || ''} onChange={e => {
+                        const v = Number(e.target.value);
+                        const updated = [...ports];
+                        updated[idx].voltage = v;
+                        if (v > 0 && updated[idx].wattage > 0) {
+                          updated[idx].amperage = parseFloat((updated[idx].wattage / v).toFixed(2));
+                        }
+                        setPorts(updated);
+                      }} style={{ width: '100%', padding: '0.4rem 1.1rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }} />
+                      <span style={{ position: 'absolute', right: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>V</span>
+                    </div>
+
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input type="number" placeholder="Ampere" step="0.1" value={p.amperage || ''} onChange={e => {
+                        const a = Number(e.target.value);
+                        const updated = [...ports];
+                        updated[idx].amperage = a;
+                        if (a > 0 && updated[idx].voltage > 0) {
+                          updated[idx].wattage = parseFloat((updated[idx].voltage * a).toFixed(2));
+                        }
+                        setPorts(updated);
+                      }} style={{ width: '100%', padding: '0.4rem 1.1rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }} />
+                      <span style={{ position: 'absolute', right: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>A</span>
+                    </div>
+
+                    <button type="button" onClick={() => setPorts(ports.filter((_, i) => i !== idx))} style={{ background: 'none', color: 'var(--error)', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0.25rem' }}>&times;</button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setPorts([...ports, { voltage: 5, amperage: 2, wattage: 10, portType: 'USB-C' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>+ Weiteren Port hinzufügen</button>
+              </div>
+            )}
 
             {/* Hierarchische Lagerort-Auswahl */}
             {renderLocationTreeSelector(cabLocParentId, setCabLocParentId, cabLocation, setCabLocation, 'Lagerort')}
@@ -1788,37 +1931,6 @@ export default function App() {
             )}
             {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
 
-            {/* Multi-Output Details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Leistungsausgänge (Ports):</span>
-              {ports.map((p, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <select value={p.portType} onChange={e => {
-                    const updated = [...ports];
-                    updated[idx].portType = e.target.value;
-                    setPorts(updated);
-                  }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: 'none' }}>
-                    <option value="USB-C">USB-C</option>
-                    <option value="USB-A">USB-A</option>
-                    <option value="DC-Jack">DC-Jack</option>
-                  </select>
-                  <input type="number" placeholder="Volt" value={p.voltage} onChange={e => {
-                    const updated = [...ports];
-                    updated[idx].voltage = Number(e.target.value);
-                    setPorts(updated);
-                  }} style={{ width: '60px', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: 'none' }} />
-                  <span>V</span>
-                  <input type="number" placeholder="Ampere" step="0.1" value={p.amperage} onChange={e => {
-                    const updated = [...ports];
-                    updated[idx].amperage = Number(e.target.value);
-                    setPorts(updated);
-                  }} style={{ width: '60px', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: 'none' }} />
-                  <span>A</span>
-                </div>
-              ))}
-              <button type="button" onClick={() => setPorts([...ports, { voltage: 5, amperage: 2, portType: 'USB-C' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.5rem' }}>+ Weiteren Port hinzufügen</button>
-            </div>
-
             <button type="submit" className="btn-primary" onClick={() => setCabIsMulti(true)}>Ladegerät anlegen</button>
           </form>
 
@@ -1836,20 +1948,33 @@ export default function App() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <strong>{c.name}</strong>
-                    <span style={{ fontSize: '0.8rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>{c.connectorType}</span>
+                    <span style={{ fontSize: '0.8rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
+                      {c.chargerType === 'only_fixed_cable' ? '🪢 Kabel-Netzteil' : c.chargerType === 'hybrid' ? '🎛️ Hybrid-Lader' : '🔌 Port-Lader'}
+                    </span>
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                     Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
                   </div>
-                  {c.powerOutputs && c.powerOutputs.length > 0 && (
-                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                      {c.powerOutputs.map((p, i) => (
-                        <span key={i} style={{ fontSize: '0.7rem', background: 'var(--accent-glow)', color: 'var(--accent-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                          {p.portType}: {p.voltage}V @ {p.amperage}A
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                    {/* Festes Kabel */}
+                    {(c.chargerType === 'only_fixed_cable' || c.chargerType === 'hybrid' || c.fixedCableConnector) && (
+                      <div style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-primary)' }}>
+                        <span>🪢</span>
+                        <span>Festes Kabel: <strong>{c.fixedCableConnector || c.connectorType}</strong> ({c.fixedCableLength ? c.fixedCableLength : 'k.A.'}{c.fixedCablePower ? `, ${c.fixedCablePower}` : ''})</span>
+                      </div>
+                    )}
+                    {/* Ports */}
+                    {(c.chargerType === 'only_ports' || c.chargerType === 'hybrid' || !c.chargerType) && c.powerOutputs && c.powerOutputs.length > 0 && (
+                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Ports:</span>
+                        {c.powerOutputs.map((p, i) => (
+                          <span key={i} style={{ fontSize: '0.7rem', background: 'var(--accent-glow)', color: 'var(--accent-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                            {p.portType}: {p.wattage ? `${p.wattage}W` : `${p.voltage * p.amperage}W`} ({p.voltage}V / {p.amperage}A)
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '0.5rem', justifyContent: 'flex-end' }}>
@@ -2371,20 +2496,57 @@ export default function App() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div><strong>Name:</strong> {selectedCableDetails.name}</div>
-              {selectedCableDetails.brand && <div><strong>Marke:</strong> {selectedCableDetails.brand}</div>}
-              <div>
-                <strong>Stecker-Typen:</strong> {selectedCableDetails.connectorType1 && selectedCableDetails.connectorType2 
-                  ? `${selectedCableDetails.connectorType1} ↔ ${selectedCableDetails.connectorType2}` 
-                  : selectedCableDetails.connectorType}
-              </div>
-              {selectedCableDetails.cableStandard1 && <div><strong>Kabel-Standard 1:</strong> {selectedCableDetails.cableStandard1}</div>}
-              {selectedCableDetails.cableStandard2 && <div><strong>Kabel-Standard 2:</strong> {selectedCableDetails.cableStandard2}</div>}
-              {selectedCableDetails.length && <div><strong>Kabellänge:</strong> {selectedCableDetails.length}</div>}
-              {selectedCableDetails.color && <div><strong>Farbe:</strong> {selectedCableDetails.color}</div>}
-              {selectedCableDetails.material && <div><strong>Material:</strong> {selectedCableDetails.material}</div>}
-              {selectedCableDetails.condition && <div><strong>Zustand:</strong> {selectedCableDetails.condition}</div>}
-              {selectedCableDetails.dataRate && <div><strong>Datenübertragungsrate:</strong> {selectedCableDetails.dataRate}</div>}
-              {selectedCableDetails.chargingPower && <div><strong>Ladeleistung:</strong> {selectedCableDetails.chargingPower}</div>}
+              
+              {selectedCableDetails.isMultiOutput ? (
+                // Charger Details
+                <>
+                  <div><strong>Typ:</strong> {selectedCableDetails.chargerType === 'only_fixed_cable' ? '🪢 Netzteil mit festem Kabel' : selectedCableDetails.chargerType === 'hybrid' ? '🎛️ Hybrid-Ladegerät' : '🔌 Netzteil mit Ports'}</div>
+                  
+                  {/* Fixed Cable details if present */}
+                  {(selectedCableDetails.chargerType === 'only_fixed_cable' || selectedCableDetails.chargerType === 'hybrid' || selectedCableDetails.fixedCableConnector) && (
+                    <div style={{ background: 'var(--bg-tertiary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', marginTop: '0.25rem' }}>
+                      <strong style={{ display: 'block', fontSize: '0.8rem', color: 'var(--accent-secondary)', marginBottom: '0.25rem' }}>🪢 Fest verbautes Kabel</strong>
+                      <div><strong>Anschluss:</strong> {selectedCableDetails.fixedCableConnector || selectedCableDetails.connectorType}</div>
+                      {selectedCableDetails.fixedCableLength && <div><strong>Länge:</strong> {selectedCableDetails.fixedCableLength}</div>}
+                      {selectedCableDetails.fixedCablePower && <div><strong>Ladeleistung:</strong> {selectedCableDetails.fixedCablePower}</div>}
+                    </div>
+                  )}
+
+                  {/* Ports details if present */}
+                  {(selectedCableDetails.chargerType === 'only_ports' || selectedCableDetails.chargerType === 'hybrid' || !selectedCableDetails.chargerType) && selectedCableDetails.powerOutputs && selectedCableDetails.powerOutputs.length > 0 && (
+                    <div style={{ background: 'var(--bg-tertiary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', marginTop: '0.25rem' }}>
+                      <strong style={{ display: 'block', fontSize: '0.8rem', color: 'var(--accent-secondary)', marginBottom: '0.25rem' }}>🔌 Ausgänge / Ports</strong>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        {selectedCableDetails.powerOutputs.map((p, i) => (
+                          <div key={i} style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', borderBottom: i < (selectedCableDetails.powerOutputs?.length || 0) - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: '0.2rem' }}>
+                            <span>Port {i+1} ({p.portType}):</span>
+                            <strong>{p.wattage ? `${p.wattage}W` : `${p.voltage * p.amperage}W`} ({p.voltage}V @ {p.amperage}A)</strong>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                // Cable Details
+                <>
+                  {selectedCableDetails.brand && <div><strong>Marke:</strong> {selectedCableDetails.brand}</div>}
+                  <div>
+                    <strong>Stecker-Typen:</strong> {selectedCableDetails.connectorType1 && selectedCableDetails.connectorType2 
+                      ? `${selectedCableDetails.connectorType1} ↔ ${selectedCableDetails.connectorType2}` 
+                      : selectedCableDetails.connectorType}
+                  </div>
+                  {selectedCableDetails.cableStandard1 && <div><strong>Kabel-Standard 1:</strong> {selectedCableDetails.cableStandard1}</div>}
+                  {selectedCableDetails.cableStandard2 && <div><strong>Kabel-Standard 2:</strong> {selectedCableDetails.cableStandard2}</div>}
+                  {selectedCableDetails.length && <div><strong>Kabellänge:</strong> {selectedCableDetails.length}</div>}
+                  {selectedCableDetails.color && <div><strong>Farbe:</strong> {selectedCableDetails.color}</div>}
+                  {selectedCableDetails.material && <div><strong>Material:</strong> {selectedCableDetails.material}</div>}
+                  {selectedCableDetails.condition && <div><strong>Zustand:</strong> {selectedCableDetails.condition}</div>}
+                  {selectedCableDetails.dataRate && <div><strong>Datenübertragungsrate:</strong> {selectedCableDetails.dataRate}</div>}
+                  {selectedCableDetails.chargingPower && <div><strong>Ladeleistung:</strong> {selectedCableDetails.chargingPower}</div>}
+                </>
+              )}
+
               <div><strong>Lagerort:</strong> {selectedCableDetails.locationId ? buildLocationPath(selectedCableDetails.locationId, locations) : 'Kein Ort'}</div>
               
               {/* Eigene Eigenschaften anzeigen */}
