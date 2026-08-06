@@ -112,8 +112,8 @@ export default function App() {
   
   const [cabImages, setCabImages] = useState<ImageAttachment[]>([]);
   const [devImages, setDevImages] = useState<ImageAttachment[]>([]);
-  const [tempCabImageLabel, setTempCabImageLabel] = useState('Gesamtansicht');
-  const [tempDevImageLabel, setTempDevImageLabel] = useState('Gesamtansicht');
+  const [tempCabImageLabel, setTempCabImageLabel] = useState('');
+  const [tempDevImageLabel, setTempDevImageLabel] = useState('');
   const [cabLocParentId, setCabLocParentId] = useState<string | undefined>(undefined);
   const [devLocParentId, setDevLocParentId] = useState<string | undefined>(undefined);
   const [settingsView, setSettingsView] = useState<'menu' | 'layout' | 'properties' | 'export' | 'about'>('menu');
@@ -654,10 +654,11 @@ export default function App() {
     try {
       setIsCompressing(true);
       const compressed = await compressImage(file);
+      const count = context === 'cable' ? cabImages.length : devImages.length;
       const newImage: ImageAttachment = {
         id: generateUUID(),
         url: compressed,
-        label: label.trim() || 'Unbenannt'
+        label: label.trim() || `Foto ${count + 1}`
       };
       if (context === 'cable') {
         setCabImages(prev => [...prev, newImage]);
@@ -733,7 +734,7 @@ export default function App() {
     setCabLocation('');
     setCabIsMulti(false);
     setCabImages([]);
-    setTempCabImageLabel('Gesamtansicht');
+    setTempCabImageLabel('');
     setCabLocParentId(undefined);
     setCabCableStandard1('');
     setCabCableStandard2('');
@@ -792,7 +793,7 @@ export default function App() {
     setDevBrand('');
     setDevLocation('');
     setDevImages([]);
-    setTempDevImageLabel('Gesamtansicht');
+    setTempDevImageLabel('');
     setDevLocParentId(undefined);
     setShowDevLoc(false);
     setShowDevPhotos(false);
@@ -1568,7 +1569,7 @@ export default function App() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
                       <input 
                         type="text" 
-                        placeholder="Beschreibung (z.B. Stecker 1)" 
+                        placeholder="Beschreibung (optional, z.B. Stecker 1)" 
                         value={tempCabImageLabel} 
                         onChange={e => setTempCabImageLabel(e.target.value)} 
                         style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
@@ -1847,7 +1848,7 @@ export default function App() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
                       <input 
                         type="text" 
-                        placeholder="Beschreibung (z.B. Frontansicht)" 
+                        placeholder="Beschreibung (optional, z.B. Frontansicht)" 
                         value={tempCabImageLabel} 
                         onChange={e => setTempCabImageLabel(e.target.value)} 
                         style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
@@ -2021,7 +2022,7 @@ export default function App() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
                       <input 
                         type="text" 
-                        placeholder="Beschreibung (z.B. Frontansicht)" 
+                        placeholder="Beschreibung (optional, z.B. Frontansicht)" 
                         value={tempDevImageLabel} 
                         onChange={e => setTempDevImageLabel(e.target.value)} 
                         style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
