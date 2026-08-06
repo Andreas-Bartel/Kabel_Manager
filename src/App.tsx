@@ -94,7 +94,6 @@ export default function App() {
   const [showDevLoc, setShowDevLoc] = useState(false);
   const [showDevPhotos, setShowDevPhotos] = useState(false);
 
-  const [activeOverviewList, setActiveOverviewList] = useState<'none' | 'cables' | 'chargers' | 'devices' | 'locations'>('none');
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
 
   // Form States - Cable new attributes (Schritt 5 & Eigenschaften verwalten)
@@ -256,8 +255,8 @@ export default function App() {
         setSelectedDeviceDetails(null);
       } else if (activeTab === 'settings' && settingsView !== 'menu') {
         setSettingsView('menu');
-      } else if (activeTab !== 'overview') {
-        setActiveTab('overview');
+      } else if (activeTab !== 'home') {
+        setActiveTab('home');
       } else {
         CapApp.exitApp();
       }
@@ -1005,8 +1004,8 @@ export default function App() {
         </button>
       )}
 
-      {/* Fuzzy Search (nur in Unterseiten anzeigen, nicht auf Home) */}
-      {activeTab !== 'home' && activeTab !== 'settings' && (
+      {/* Fuzzy Search (auf allen Seiten außer Einstellungen anzeigen) */}
+      {activeTab !== 'settings' && (
         <div className="glass-panel" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
           <Search size={20} style={{ color: 'var(--text-muted)' }} />
           <input
@@ -1027,8 +1026,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Search Results (nur in Unterseiten anzeigen) */}
-      {activeTab !== 'home' && activeTab !== 'settings' && searchQuery && (
+      {/* Search Results (auf allen Seiten außer Einstellungen anzeigen) */}
+      {activeTab !== 'settings' && searchQuery && (
         <div className="glass-panel" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
           <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Suchergebnisse</h3>
           {searchResults.cables.length === 0 && searchResults.devices.length === 0 && (
@@ -1065,292 +1064,178 @@ export default function App() {
 
       {/* HOME DASHBOARD TILE GRID */}
       {activeTab === 'home' && (
-        <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
-          {/* Tile 1: Übersicht */}
-          <div onClick={() => setActiveTab('overview')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-            <img src="/icons/overview.png" alt="Übersicht" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Übersicht</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginTop: '0.5rem' }}>
+          {/* Tile 1: Scan / QR (Hero-Style) */}
+          <div 
+            onClick={() => { setActiveTab('scan'); startCamera(); }} 
+            className="glass-panel tile-btn" 
+            style={{ 
+              gridColumn: 'span 2', 
+              padding: '1.5rem 1rem', 
+              textAlign: 'center', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              borderRadius: 'var(--radius-md)', 
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--border-glass)',
+              position: 'relative'
+            }}
+          >
+            <img src="/icons/scan.png" alt="Scan / QR" style={{ width: '64px', height: '64px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+            <span style={{ fontWeight: 700, fontSize: '1rem', background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Scan / QR (Kamera)</span>
           </div>
 
-          {/* Tile 2: Scan / QR */}
-          <div onClick={() => { setActiveTab('scan'); startCamera(); }} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
-            <img src="/icons/scan.png" alt="Scan / QR" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Scan / QR</span>
-          </div>
-
-          {/* Tile 3: Kabel */}
-          <div onClick={() => setActiveTab('cables')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+          {/* Tile 2: Kabel */}
+          <div 
+            onClick={() => setActiveTab('cables')} 
+            className="glass-panel tile-btn" 
+            style={{ 
+              padding: '1.5rem 1rem', 
+              textAlign: 'center', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              borderRadius: 'var(--radius-md)', 
+              position: 'relative' 
+            }}
+          >
+            {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '-8px',
+                background: 'var(--accent-gradient)',
+                color: 'white',
+                borderRadius: '50%',
+                minWidth: '24px',
+                height: '24px',
+                padding: '0 6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
+                border: '2px solid var(--bg-primary)',
+                zIndex: 10
+              }}>
+                {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length}
+              </span>
+            )}
             <img src="/icons/cables.png" alt="Kabel" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
             <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Kabel</span>
           </div>
 
-          {/* Tile 4: Ladegeräte */}
-          <div onClick={() => setActiveTab('chargers')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+          {/* Tile 3: Ladegeräte */}
+          <div 
+            onClick={() => setActiveTab('chargers')} 
+            className="glass-panel tile-btn" 
+            style={{ 
+              padding: '1.5rem 1rem', 
+              textAlign: 'center', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              borderRadius: 'var(--radius-md)', 
+              position: 'relative' 
+            }}
+          >
+            {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '-8px',
+                background: 'var(--accent-gradient)',
+                color: 'white',
+                borderRadius: '50%',
+                minWidth: '24px',
+                height: '24px',
+                padding: '0 6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
+                border: '2px solid var(--bg-primary)',
+                zIndex: 10
+              }}>
+                {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length}
+              </span>
+            )}
             <img src="/icons/chargers.png" alt="Ladegeräte" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
             <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Ladegeräte</span>
           </div>
 
-          {/* Tile 5: Geräte */}
-          <div onClick={() => setActiveTab('devices')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+          {/* Tile 4: Geräte */}
+          <div 
+            onClick={() => setActiveTab('devices')} 
+            className="glass-panel tile-btn" 
+            style={{ 
+              padding: '1.5rem 1rem', 
+              textAlign: 'center', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              borderRadius: 'var(--radius-md)', 
+              position: 'relative' 
+            }}
+          >
+            {devices.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '-8px',
+                background: 'var(--accent-gradient)',
+                color: 'white',
+                borderRadius: '50%',
+                minWidth: '24px',
+                height: '24px',
+                padding: '0 6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
+                border: '2px solid var(--bg-primary)',
+                zIndex: 10
+              }}>
+                {devices.length}
+              </span>
+            )}
             <img src="/icons/devices.png" alt="Geräte" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
             <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Geräte</span>
           </div>
 
-          {/* Tile 6: Lagerorte */}
-          <div onClick={() => setActiveTab('locations')} className="glass-panel tile-btn" style={{ padding: '1.5rem 1rem', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
+          {/* Tile 5: Lagerorte */}
+          <div 
+            onClick={() => setActiveTab('locations')} 
+            className="glass-panel tile-btn" 
+            style={{ 
+              padding: '1.5rem 1rem', 
+              textAlign: 'center', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              borderRadius: 'var(--radius-md)', 
+              position: 'relative' 
+            }}
+          >
             <img src="/icons/locations.png" alt="Lagerorte" style={{ width: '56px', height: '56px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
             <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Lagerorte</span>
           </div>
-        </div>
-        </>
-      )}
-      
-      {/* TAB: OVERVIEW */}
-      {activeTab === 'overview' && !searchQuery && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <section className="glass-panel" style={{ padding: '1.25rem' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: '0.75rem' }}>Dein Kabel-Inventar</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <div 
-                onClick={() => setActiveOverviewList(prev => prev === 'cables' ? 'none' : 'cables')} 
-                style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center', cursor: 'pointer', border: activeOverviewList === 'cables' ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)', transition: 'transform 0.15s ease' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-primary)' }}>
-                  {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Kabel</div>
-              </div>
-              
-              <div 
-                onClick={() => setActiveOverviewList(prev => prev === 'chargers' ? 'none' : 'chargers')} 
-                style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center', cursor: 'pointer', border: activeOverviewList === 'chargers' ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)', transition: 'transform 0.15s ease' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-primary)' }}>
-                  {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Ladegeräte</div>
-              </div>
-
-              <div 
-                onClick={() => setActiveOverviewList(prev => prev === 'devices' ? 'none' : 'devices')} 
-                style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center', cursor: 'pointer', border: activeOverviewList === 'devices' ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)', transition: 'transform 0.15s ease' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--accent-secondary)' }}>{devices.length}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Geräte</div>
-              </div>
-
-              <div 
-                onClick={() => setActiveOverviewList(prev => prev === 'locations' ? 'none' : 'locations')} 
-                style={{ background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center', cursor: 'pointer', border: activeOverviewList === 'locations' ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)', transition: 'transform 0.15s ease' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--success)' }}>
-                  {locations.filter(loc => cables.some(c => c.locationId === loc.id) || devices.some(d => d.locationId === loc.id)).length}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Lagerorte</div>
-              </div>
-            </div>
-
-            {/* Inline Kabel-Liste */}
-            {activeOverviewList === 'cables' && (
-              <div className="glass-panel" style={{ padding: '1rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(0,0,0,0.1)' }}>
-                <h3 style={{ fontSize: '0.95rem', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Registrierte Kabel</span>
-                  <button onClick={() => setActiveOverviewList('none')} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>Schließen</button>
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '300px', overflowY: 'auto' }}>
-                  {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length === 0 ? (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keine Kabel registriert.</span>
-                  ) : (
-                    cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).map(c => (
-                      <div 
-                        key={c.id} 
-                        onClick={() => setSelectedCableDetails(c)}
-                        style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}
-                      >
-                        <strong>🔌 {c.name}</strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Inline Ladegeräte-Liste */}
-            {activeOverviewList === 'chargers' && (
-              <div className="glass-panel" style={{ padding: '1rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(0,0,0,0.1)' }}>
-                <h3 style={{ fontSize: '0.95rem', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Registrierte Ladegeräte</span>
-                  <button onClick={() => setActiveOverviewList('none')} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>Schließen</button>
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '300px', overflowY: 'auto' }}>
-                  {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length === 0 ? (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keine Ladegeräte registriert.</span>
-                  ) : (
-                    cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).map(c => (
-                      <div 
-                        key={c.id} 
-                        onClick={() => setSelectedCableDetails(c)}
-                        style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}
-                      >
-                        <strong>🔋 {c.name}</strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>
-                          {c.powerOutputs?.map(p => `${p.wattage}W`).join(', ') || c.connectorType}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Inline Geräte-Liste */}
-            {activeOverviewList === 'devices' && (
-              <div className="glass-panel" style={{ padding: '1rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(0,0,0,0.1)' }}>
-                <h3 style={{ fontSize: '0.95rem', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Registrierte Geräte</span>
-                  <button onClick={() => setActiveOverviewList('none')} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>Schließen</button>
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '300px', overflowY: 'auto' }}>
-                  {devices.length === 0 ? (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keine Geräte registriert.</span>
-                  ) : (
-                    devices.map(d => (
-                      <div 
-                        key={d.id} 
-                        onClick={() => setSelectedDeviceDetails(d)}
-                        style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}
-                      >
-                        <strong>📱 {d.name}</strong>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          {d.manufacturer || 'Generisch'}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Hierarchische Lagerort-Übersicht bei Klick auf Lagerorte */}
-            {activeOverviewList === 'locations' && (
-              <div className="glass-panel" style={{ padding: '1rem', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(0,0,0,0.1)' }}>
-                <h3 style={{ fontSize: '0.95rem', margin: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Lagerorte mit zugewiesenen Komponenten</span>
-                  <button 
-                    onClick={() => setActiveOverviewList('none')} 
-                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
-                  >
-                    Schließen
-                  </button>
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.25rem' }}>
-                  {locations.map(loc => {
-                    const locCables = cables.filter(c => c.locationId === loc.id && !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0));
-                    const locChargers = cables.filter(c => c.locationId === loc.id && (c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)));
-                    const locDevices = devices.filter(d => d.locationId === loc.id);
-                    
-                    const totalItems = locCables.length + locChargers.length + locDevices.length;
-                    if (totalItems === 0) return null; // Nur Lagerorte mit zugewiesenen Komponenten
-                    
-                    return (
-                      <div key={loc.id} style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--accent-primary)', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.25rem' }}>
-                          📍 {buildLocationPath(loc.id, locations)} ({totalItems})
-                        </div>
-                        
-                        {/* List Cables */}
-                        {locCables.length > 0 && (
-                          <div style={{ paddingLeft: '0.5rem' }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Kabel:</div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
-                              {locCables.map(c => (
-                                <span 
-                                  key={c.id} 
-                                  onClick={() => setSelectedCableDetails(c)}
-                                  className="btn-primary" 
-                                  style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', cursor: 'pointer', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '3px' }}
-                                >
-                                  🔌 {c.name}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* List Chargers */}
-                        {locChargers.length > 0 && (
-                          <div style={{ paddingLeft: '0.5rem' }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Ladegeräte:</div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
-                              {locChargers.map(c => (
-                                <span 
-                                  key={c.id} 
-                                  onClick={() => setSelectedCableDetails(c)}
-                                  className="btn-primary" 
-                                  style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', cursor: 'pointer', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '3px' }}
-                                >
-                                  🔋 {c.name}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* List Devices */}
-                        {locDevices.length > 0 && (
-                          <div style={{ paddingLeft: '0.5rem' }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Geräte:</div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
-                              {locDevices.map(d => (
-                                <span 
-                                  key={d.id} 
-                                  onClick={() => setSelectedDeviceDetails(d)}
-                                  className="btn-primary" 
-                                  style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', cursor: 'pointer', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: '3px' }}
-                                >
-                                  📱 {d.name}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {!locations.some(loc => {
-                    const total = cables.filter(c => c.locationId === loc.id).length + devices.filter(d => d.locationId === loc.id).length;
-                    return total > 0;
-                  }) && (
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keinen Lagerorten sind Komponenten zugewiesen.</span>
-                  )}
-                </div>
-              </div>
-            )}
-          </section>
-
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <button className="btn-primary" onClick={() => { setActiveTab('scan'); startCamera(); }} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', padding: '1rem' }}>
-              <QrCode size={20} />
-              Sticker scannen (Kamera)
-            </button>
-            <button onClick={handleExportData} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}>
-              <Upload size={18} />
-              Datenexport (.json)
-            </button>
-          </section>
         </div>
       )}
 
