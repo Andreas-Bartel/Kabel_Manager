@@ -61,6 +61,7 @@ export interface Device {
   userId?: string; // Eigentümer des Geräts
   createdAt: string;
   images?: ImageAttachment[];
+  additionalProperties?: Record<string, string>;
 }
 
 export interface StorageLocation {
