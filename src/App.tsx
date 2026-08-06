@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer, Settings, ArrowLeft } from 'lucide-react';
+import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer, Settings, ArrowLeft, Home, Folder } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { Cable, Device, StorageLocation, buildLocationPath, checkPowerCompatibility, CompatibilityResult, ImageAttachment } from './contexts/inventory/domain/types';
 import { LocalStorageCableRepository } from './contexts/inventory/infrastructure/LocalStorageCableRepository';
@@ -471,100 +471,202 @@ export default function App() {
     };
 
     const breadcrumbs = getPathNodes(currentParentId);
-    const selectedLocName = selectedLocationId ? buildLocationPath(selectedLocationId, locations) : 'Kein Ort ausgewählt';
 
     return (
       <div className="glass-panel" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }}>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-          {label} (Baumstruktur)
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+          Lagerort
         </div>
         
-        {/* Selected indicator */}
-        <div style={{ fontSize: '0.85rem', color: selectedLocationId ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: 600 }}>
-          Auswahl: {selectedLocName}
+        {/* Selected indicator directly below title */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          fontSize: '0.85rem', 
+          color: selectedLocationId ? 'var(--accent-primary)' : 'var(--text-secondary)', 
+          fontWeight: 600, 
+          background: 'rgba(0,0,0,0.15)', 
+          padding: '0.5rem 0.75rem', 
+          borderRadius: 'var(--radius-sm)', 
+          border: '1px solid var(--border-glass)' 
+        }}>
+          <span>{selectedLocationId ? `📍 ${buildLocationPath(selectedLocationId, locations)}` : 'Kein Ort ausgewählt'}</span>
           {selectedLocationId && (
             <button 
               type="button" 
-              onClick={() => setSelectedLocationId('')} 
-              style={{ marginLeft: '0.5rem', background: 'none', color: 'var(--error)', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+              onClick={() => { setSelectedLocationId(''); setCurrentParentId(undefined); }} 
+              style={{ background: 'none', color: 'var(--error)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}
+              title="Lagerort zurücksetzen"
             >
-              (Zurücksetzen)
+              <Trash2 size={16} />
             </button>
           )}
         </div>
 
-        {/* Breadcrumbs */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', alignItems: 'center', fontSize: '0.8rem', background: 'rgba(255,255,255,0.03)', padding: '0.4rem', borderRadius: '4px' }}>
-          <span 
-            onClick={() => setCurrentParentId(undefined)} 
-            style={{ cursor: 'pointer', color: currentParentId === undefined ? 'var(--text-primary)' : 'var(--accent-secondary)', textDecoration: currentParentId === undefined ? 'none' : 'underline' }}
-          >
-            Start
-          </span>
+        {/* Vertical Hierarchy Path and Children */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
+          {/* Top level: Home Icon */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button 
+              type="button" 
+              onClick={() => setCurrentParentId(undefined)} 
+              style={{
+                background: currentParentId === undefined ? 'var(--accent-glow)' : 'var(--bg-secondary)',
+                border: currentParentId === undefined ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                padding: '0.4rem',
+                borderRadius: '50%',
+                color: currentParentId === undefined ? 'var(--accent-primary)' : 'var(--text-primary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '28px',
+                height: '28px'
+              }}
+            >
+              <Home size={14} />
+            </button>
+            <span 
+              onClick={() => setCurrentParentId(undefined)} 
+              style={{ 
+                fontSize: '0.8rem', 
+                color: currentParentId === undefined ? 'var(--accent-primary)' : 'var(--text-secondary)', 
+                fontWeight: currentParentId === undefined ? 'bold' : 'normal',
+                cursor: 'pointer' 
+              }}
+            >
+              Home
+            </span>
+          </div>
+
+          {/* Breadcrumbs (vertical list of active path) */}
           {breadcrumbs.map((node, i) => (
             <React.Fragment key={node.id}>
-              <span style={{ color: 'var(--text-muted)' }}>&gt;</span>
-              <span 
-                onClick={() => setCurrentParentId(node.id)} 
-                style={{ cursor: 'pointer', color: i === breadcrumbs.length - 1 ? 'var(--text-primary)' : 'var(--accent-secondary)', textDecoration: i === breadcrumbs.length - 1 ? 'none' : 'underline' }}
-              >
-                {node.name}
-              </span>
+              {/* Arrow connector between parent and child */}
+              <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '0.65rem', margin: '-0.2rem 0', color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: '0.8rem' }}>↓</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button 
+                  type="button" 
+                  onClick={() => { setCurrentParentId(node.id); setSelectedLocationId(node.id); }} 
+                  style={{
+                    background: currentParentId === node.id ? 'var(--accent-glow)' : 'var(--bg-secondary)',
+                    border: currentParentId === node.id ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                    padding: '0.4rem',
+                    borderRadius: '50%',
+                    color: currentParentId === node.id ? 'var(--accent-primary)' : 'var(--text-primary)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '28px',
+                    height: '28px'
+                  }}
+                >
+                  <Folder size={14} />
+                </button>
+                <span 
+                  onClick={() => { setCurrentParentId(node.id); setSelectedLocationId(node.id); }} 
+                  style={{ 
+                    fontSize: '0.8rem', 
+                    color: currentParentId === node.id ? 'var(--accent-primary)' : 'var(--text-secondary)', 
+                    fontWeight: currentParentId === node.id ? 'bold' : 'normal',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {node.name}
+                </span>
+              </div>
             </React.Fragment>
           ))}
-        </div>
 
-        {/* List of sub-locations */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-glass)', borderRadius: '4px', padding: '0.5rem', background: 'rgba(0,0,0,0.1)' }}>
-          {visibleLocations.length === 0 ? (
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Keine untergeordneten Orte vorhanden.</span>
-          ) : (
-            visibleLocations.map(loc => {
-              const hasSub = locations.some(l => l.parentLocationId === loc.id);
-              const isSelected = selectedLocationId === loc.id;
-              return (
-                <div key={loc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0.5rem', borderRadius: '4px', background: isSelected ? 'var(--accent-glow)' : 'rgba(255,255,255,0.02)', border: isSelected ? '1px solid var(--accent-primary)' : '1px solid transparent' }}>
-                  <span 
-                    onClick={() => hasSub && setCurrentParentId(loc.id)} 
-                    style={{ fontSize: '0.85rem', cursor: hasSub ? 'pointer' : 'default', fontWeight: hasSub ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: '0.25rem', flex: 1 }}
-                  >
-                    {hasSub ? '📁' : '📍'} {loc.name} {hasSub && <span style={{ fontSize: '0.7rem', color: 'var(--accent-secondary)' }}>(Öffnen)</span>}
-                  </span>
-                  
-                  <button
-                    type="button"
-                    onClick={() => setSelectedLocationId(loc.id)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      fontSize: '0.75rem',
-                      borderRadius: '3px',
-                      background: isSelected ? 'var(--success)' : 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-glass)',
-                      cursor: 'pointer'
+          {/* Arrow connector to the list of children at the current level */}
+          <div style={{ display: 'flex', alignItems: 'center', paddingLeft: '0.65rem', margin: '-0.2rem 0', color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: '0.8rem' }}>↓</span>
+          </div>
+
+          {/* List of visible child locations */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.4rem', 
+            maxHeight: '180px', 
+            overflowY: 'auto', 
+            borderLeft: '2px solid var(--accent-glow)', 
+            marginLeft: '0.8rem', 
+            paddingLeft: '0.75rem',
+            paddingTop: '0.2rem',
+            paddingBottom: '0.2rem'
+          }}>
+            {visibleLocations.length === 0 ? (
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Keine untergeordneten Orte vorhanden.</span>
+            ) : (
+              visibleLocations.map(loc => {
+                const isSelected = selectedLocationId === loc.id;
+                const hasChildren = locations.some(l => l.parentLocationId === loc.id);
+                return (
+                  <div 
+                    key={loc.id} 
+                    onClick={() => {
+                      setCurrentParentId(loc.id);
+                      setSelectedLocationId(loc.id);
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      padding: '0.35rem 0.5rem', 
+                      borderRadius: 'var(--radius-sm)', 
+                      background: isSelected ? 'var(--accent-glow)' : 'rgba(255,255,255,0.02)', 
+                      border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
                     }}
                   >
-                    {isSelected ? '✓ Gewählt' : 'Wählen'}
-                  </button>
-                </div>
-              );
-            })
-          )}
+                    <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                      <Folder size={12} style={{ color: 'var(--accent-secondary)' }} /> {loc.name}
+                    </span>
+                    {hasChildren && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600 }}>&gt;</span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
 
-        {/* Back one level button */}
-        {currentParentId !== undefined && (
+        {/* Quick create location directly within the feature */}
+        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '0.5rem' }}>
+          <input 
+            type="text" 
+            placeholder="Neuen Ort hier anlegen..." 
+            id={`quick-loc-name-${label.replace(/\s+/g, '-')}`}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                handleQuickCreateLocation(e.currentTarget.value, currentParentId, setSelectedLocationId, setCurrentParentId);
+                e.currentTarget.value = '';
+              }
+            }}
+            style={{ flex: 1, padding: '0.35rem 0.5rem', fontSize: '0.75rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)' }}
+          />
           <button 
             type="button" 
             onClick={() => {
-              const currentLoc = locations.find(l => l.id === currentParentId);
-              setCurrentParentId(currentLoc?.parentLocationId || undefined);
-            }} 
-            style={{ fontSize: '0.75rem', background: 'none', color: 'var(--accent-secondary)', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}
+              const input = document.getElementById(`quick-loc-name-${label.replace(/\s+/g, '-')}`) as HTMLInputElement;
+              if (input && input.value.trim()) {
+                handleQuickCreateLocation(input.value.trim(), currentParentId, setSelectedLocationId, setCurrentParentId);
+                input.value = '';
+              }
+            }}
+            className="btn-primary" 
+            style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', borderRadius: 'var(--radius-sm)' }}
           >
-            ← Eine Ebene nach oben
+            +
           </button>
-        )}
+        </div>
       </div>
     );
   };
@@ -639,6 +741,25 @@ export default function App() {
       refreshData();
     } catch (err: any) {
       alert(err.message);
+    }
+  };
+
+  const handleQuickCreateLocation = async (
+    name: string, 
+    parentId: string | undefined, 
+    setSelectedId: (id: string) => void, 
+    setCurrentParent: (id: string | undefined) => void
+  ) => {
+    if (!name.trim()) return;
+    try {
+      const newLoc = await createLocationUseCase.execute(name.trim(), parentId, '');
+      newLoc.userId = currentUserId;
+      await locationRepo.saveLocation(newLoc);
+      await refreshData();
+      setSelectedId(newLoc.id);
+      setCurrentParent(newLoc.id);
+    } catch (err: any) {
+      alert("Fehler beim Erstellen des Lagerorts: " + err.message);
     }
   };
 
@@ -2009,7 +2130,7 @@ export default function App() {
             {/* Hierarchische Lagerort-Auswahl für Geräte */}
             {showDevLoc && (
               <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                {renderLocationTreeSelector(devLocParentId, setDevLocParentId, devLocation, setDevLocation, 'Lagerort des Geräts')}
+                {renderLocationTreeSelector(devLocParentId, setDevLocParentId, devLocation, setDevLocation, 'Lagerort')}
               </div>
             )}
 
