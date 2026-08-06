@@ -53,9 +53,7 @@ export interface Device {
   id: string; // UUID
   name: string;
   manufacturer?: string;
-  requiredVoltage?: number; // Benötigte Spannung in Volt (V)
-  requiredAmperage?: number; // Benötigte Stromstärke in Ampere (A)
-  requiredConnectorType?: string;
+  requiredConnectorType?: string; // z.B. "USB-C", "Micro-USB", "Lightning", "DC-Jack"
   locationId?: string; // Aufbewahrungsort des Geräts
   compatibleCableIds?: string[]; // IDs von kompatiblen Kabeln
   userId?: string; // Eigentümer des Geräts
@@ -82,86 +80,45 @@ export function buildLocationPath(locationId: string, allLocations: StorageLocat
 
 export type CompatibilityResult = 
   | { status: 'COMPATIBLE'; matchingPort: PowerOutput }
-  | { status: 'VOLTAGE_MISMATCH'; message: string }
-  | { status: 'AMPERAGE_TOO_LOW'; message: string }
   | { status: 'CONNECTOR_MISMATCH'; message: string }
   | { status: 'NO_SPECIFICATION'; message: string };
 
 export function checkPowerCompatibility(cable: Cable, device: Device): CompatibilityResult {
-  const reqVolts = device.requiredVoltage;
-  const reqAmps = device.requiredAmperage;
+  const reqConnector = device.requiredConnectorType;
   
-  if (reqVolts === undefined || reqAmps === undefined) {
-    if (device.requiredConnectorType && cable.connectorType !== device.requiredConnectorType) {
-      return { 
-        status: 'CONNECTOR_MISMATCH', 
-        message: `Stecker-Typ passt nicht: Kabel hat ${cable.connectorType}, Gerät braucht ${device.requiredConnectorType}.` 
-      };
-    }
+  if (!reqConnector) {
     return { 
       status: 'NO_SPECIFICATION', 
-      message: 'Keine genauen elektrischen Leistungsdaten am Gerät hinterlegt. Stecker passt.' 
+      message: 'Kein Anschluss am Gerät angegeben.' 
     };
   }
 
-  const outputs: PowerOutput[] = cable.powerOutputs && cable.powerOutputs.length > 0
-    ? cable.powerOutputs
-    : [{
-        voltage: 5,
-        amperage: 1, 
-        wattage: 5,
-        portType: cable.connectorType as any
-      }];
+  // Sammle alle Anschlüsse des Kabels / Ladegeräts
+  const cableConnectors = [
+    cable.connectorType,
+    cable.connectorType1,
+    cable.connectorType2,
+    ...(cable.powerOutputs || []).map(o => o.portType)
+  ].filter(Boolean);
 
-  const errors: string[] = [];
-  let hasConnectorMatch = false;
+  const isMatch = cableConnectors.some(c => c === reqConnector);
 
-  for (const output of outputs) {
-    const connectorMatch = device.requiredConnectorType 
-      ? output.portType === device.requiredConnectorType || 
-        (output.portType === 'USB-A' && device.requiredConnectorType === 'Micro-USB') ||
-        (output.portType === 'USB-C' && device.requiredConnectorType === 'USB-C')
-      : true;
-
-    if (!connectorMatch) {
-      continue;
-    }
-    hasConnectorMatch = true;
-
-    if (output.voltage !== reqVolts) {
-      errors.push(`Port ${output.portType}: Netzteil hat ${output.voltage}V, Gerät benötigt ${reqVolts}V.`);
-      continue;
-    }
-
-    if (output.amperage < reqAmps) {
-      errors.push(`Port ${output.portType}: Netzteil liefert ${output.amperage}A, Gerät benötigt ${reqAmps}A.`);
-      continue;
-    }
-
+  if (isMatch) {
+    const matchingPort = (cable.powerOutputs || []).find(o => o.portType === reqConnector) || {
+      voltage: 5,
+      amperage: 2,
+      wattage: 10,
+      portType: reqConnector as any
+    };
     return {
       status: 'COMPATIBLE',
-      matchingPort: output
+      matchingPort
     };
-  }
-
-  if (!hasConnectorMatch) {
-    return {
-      status: 'CONNECTOR_MISMATCH',
-      message: `Kein physikalisch passender Port am Netzteil gefunden. Benötigt: ${device.requiredConnectorType || 'keine Angabe'}.`
-    };
-  }
-
-  if (errors.length > 0) {
-    const isVoltageIssue = errors.some(e => e.includes('V, Gerät benötigt'));
-    if (isVoltageIssue) {
-      return { status: 'VOLTAGE_MISMATCH', message: errors.join(' | ') };
-    }
-    return { status: 'AMPERAGE_TOO_LOW', message: errors.join(' | ') };
   }
 
   return {
     status: 'CONNECTOR_MISMATCH',
-    message: 'Keine kompatible Stromverbindung möglich.'
+    message: `Anschluss passt nicht: Gerät benötigt ${reqConnector}, Kabel/Lader bietet ${cableConnectors.join(' / ') || 'keine Angabe'}.`
   };
 }
 

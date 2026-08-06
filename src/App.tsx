@@ -84,9 +84,15 @@ export default function App() {
   const [devName, setDevName] = useState('');
   const [devBrand, setDevBrand] = useState('');
   const [devConnector, setDevConnector] = useState('USB-C');
-  const [devVoltage, setDevVoltage] = useState(5);
-  const [devAmperage, setDevAmperage] = useState(2);
   const [devLocation, setDevLocation] = useState('');
+
+  // Collapse states for forms
+  const [showCabLoc, setShowCabLoc] = useState(false);
+  const [showCabPhotos, setShowCabPhotos] = useState(false);
+  const [showChargerLoc, setShowChargerLoc] = useState(false);
+  const [showChargerPhotos, setShowChargerPhotos] = useState(false);
+  const [showDevLoc, setShowDevLoc] = useState(false);
+  const [showDevPhotos, setShowDevPhotos] = useState(false);
 
   const [activeOverviewList, setActiveOverviewList] = useState<'none' | 'cables' | 'chargers' | 'devices' | 'locations'>('none');
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
@@ -747,6 +753,10 @@ export default function App() {
     setCabFixedPower('');
     setCabFixedConnector('USB-C');
     setPorts([{ voltage: 5, amperage: 2, wattage: 10, portType: 'USB-C' }]);
+    setShowCabLoc(false);
+    setShowCabPhotos(false);
+    setShowChargerLoc(false);
+    setShowChargerPhotos(false);
     refreshData();
   };
 
@@ -771,8 +781,6 @@ export default function App() {
       id: generateUUID(),
       name: devName,
       manufacturer: devBrand || undefined,
-      requiredVoltage: devVoltage,
-      requiredAmperage: devAmperage,
       requiredConnectorType: devConnector,
       locationId: devLocation || undefined,
       userId: currentUserId,
@@ -787,6 +795,8 @@ export default function App() {
     setDevImages([]);
     setTempDevImageLabel('Gesamtansicht');
     setDevLocParentId(undefined);
+    setShowDevLoc(false);
+    setShowDevPhotos(false);
     refreshData();
   };
 
@@ -1639,66 +1649,92 @@ export default function App() {
               </div>
             )}
 
-            {/* Hierarchische Lagerort-Auswahl */}
-            {renderLocationTreeSelector(cabLocParentId, setCabLocParentId, cabLocation, setCabLocation, 'Lagerort')}
-
-            {/* Foto beschreiben & hinzufügen */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Beschreibung (z.B. Stecker 1)" 
-                    value={tempCabImageLabel} 
-                    onChange={e => setTempCabImageLabel(e.target.value)} 
-                    style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
-                  />
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
-                    }} style={{ display: 'none' }} id="cab-cam-upload" />
-                    <label htmlFor="cab-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
-                      📷 Kamera
-                    </label>
-
-                    <input type="file" accept="image/*" onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
-                    }} style={{ display: 'none' }} id="cab-gal-upload" />
-                    <label htmlFor="cab-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
-                      🖼️ Galerie
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div>
-                {/* Platzhalter */}
-              </div>
+            {/* Buttons für einklappbare Optionen */}
+            <div style={{ display: 'flex', gap: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', flexWrap: 'wrap' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowCabLoc(!showCabLoc)} 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+              >
+                📍 {cabLocation ? `Lagerort: ${locations.find(l => l.id === cabLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setShowCabPhotos(!showCabPhotos)} 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+              >
+                📷 {cabImages.length > 0 ? `Fotos (${cabImages.length})` : '+ Foto'}
+              </button>
             </div>
 
-            {/* Preview of uploaded images in Cable Form */}
-            {cabImages.length > 0 && (
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
-                {cabImages.map(img => (
-                  <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
-                    <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
-                      {img.label}
-                    </span>
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveImageAttachment('cable', img.id)} 
-                      style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
+            {/* Hierarchische Lagerort-Auswahl */}
+            {showCabLoc && (
+              <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                {renderLocationTreeSelector(cabLocParentId, setCabLocParentId, cabLocation, setCabLocation, 'Lagerort')}
               </div>
             )}
-            {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+
+            {/* Foto beschreiben & hinzufügen */}
+            {showCabPhotos && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Beschreibung (z.B. Stecker 1)" 
+                        value={tempCabImageLabel} 
+                        onChange={e => setTempCabImageLabel(e.target.value)} 
+                        style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
+                        }} style={{ display: 'none' }} id="cab-cam-upload" />
+                        <label htmlFor="cab-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
+                          📷 Kamera
+                        </label>
+
+                        <input type="file" accept="image/*" onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
+                        }} style={{ display: 'none' }} id="cab-gal-upload" />
+                        <label htmlFor="cab-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
+                          🖼️ Galerie
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    {/* Platzhalter */}
+                  </div>
+                </div>
+
+                {/* Preview of uploaded images in Cable Form */}
+                {cabImages.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                    {cabImages.map(img => (
+                      <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
+                        <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
+                          {img.label}
+                        </span>
+                        <button 
+                          type="button" 
+                          onClick={() => handleRemoveImageAttachment('cable', img.id)} 
+                          style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+              </div>
+            )}
 
             <button type="submit" className="btn-primary" onClick={() => setCabIsMulti(false)}>Kabel anlegen</button>
           </form>
@@ -1892,66 +1928,92 @@ export default function App() {
               </div>
             )}
 
-            {/* Hierarchische Lagerort-Auswahl */}
-            {renderLocationTreeSelector(cabLocParentId, setCabLocParentId, cabLocation, setCabLocation, 'Lagerort')}
-
-            {/* Foto beschreiben & hinzufügen */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Beschreibung (z.B. Frontansicht)" 
-                    value={tempCabImageLabel} 
-                    onChange={e => setTempCabImageLabel(e.target.value)} 
-                    style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
-                  />
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
-                    }} style={{ display: 'none' }} id="charger-cam-upload" />
-                    <label htmlFor="charger-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
-                      📷 Kamera
-                    </label>
-
-                    <input type="file" accept="image/*" onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
-                    }} style={{ display: 'none' }} id="charger-gal-upload" />
-                    <label htmlFor="charger-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
-                      🖼️ Galerie
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div>
-                {/* Platzhalter */}
-              </div>
+            {/* Buttons für einklappbare Optionen */}
+            <div style={{ display: 'flex', gap: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', flexWrap: 'wrap' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowChargerLoc(!showChargerLoc)} 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+              >
+                📍 {cabLocation ? `Lagerort: ${locations.find(l => l.id === cabLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setShowChargerPhotos(!showChargerPhotos)} 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+              >
+                📷 {cabImages.length > 0 ? `Fotos (${cabImages.length})` : '+ Foto'}
+              </button>
             </div>
 
-            {/* Preview of uploaded images in Charger Form */}
-            {cabImages.length > 0 && (
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
-                {cabImages.map(img => (
-                  <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
-                    <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
-                      {img.label}
-                    </span>
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveImageAttachment('cable', img.id)} 
-                      style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
+            {/* Hierarchische Lagerort-Auswahl */}
+            {showChargerLoc && (
+              <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                {renderLocationTreeSelector(cabLocParentId, setCabLocParentId, cabLocation, setCabLocation, 'Lagerort')}
               </div>
             )}
-            {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+
+            {/* Foto beschreiben & hinzufügen */}
+            {showChargerPhotos && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Beschreibung (z.B. Frontansicht)" 
+                        value={tempCabImageLabel} 
+                        onChange={e => setTempCabImageLabel(e.target.value)} 
+                        style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
+                        }} style={{ display: 'none' }} id="charger-cam-upload" />
+                        <label htmlFor="charger-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
+                          📷 Kamera
+                        </label>
+
+                        <input type="file" accept="image/*" onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
+                        }} style={{ display: 'none' }} id="charger-gal-upload" />
+                        <label htmlFor="charger-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
+                          🖼️ Galerie
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    {/* Platzhalter */}
+                  </div>
+                </div>
+
+                {/* Preview of uploaded images in Charger Form */}
+                {cabImages.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                    {cabImages.map(img => (
+                      <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
+                        <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
+                          {img.label}
+                        </span>
+                        <button 
+                          type="button" 
+                          onClick={() => handleRemoveImageAttachment('cable', img.id)} 
+                          style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+              </div>
+            )}
 
             <button type="submit" className="btn-primary" onClick={() => setCabIsMulti(true)}>Ladegerät anlegen</button>
           </form>
@@ -2022,97 +2084,110 @@ export default function App() {
             <input type="text" placeholder="Name" value={devName} onChange={e => setDevName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
             <input type="text" placeholder="Hersteller" value={devBrand} onChange={e => setDevBrand(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Anschluss</label>
-                <select value={devConnector} onChange={e => setDevConnector(e.target.value)} style={{ width: '100%', padding: '0.5rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)' }}>
-                  <option value="USB-C">USB-C</option>
-                  <option value="Micro-USB">Micro-USB</option>
-                  <option value="Lightning">Lightning</option>
-                  <option value="DC-Jack">DC-Jack</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Spannung</label>
-                <select value={devVoltage} onChange={e => setDevVoltage(Number(e.target.value))} style={{ width: '100%', padding: '0.5rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)' }}>
-                  <option value="5">5 V</option>
-                  <option value="9">9 V</option>
-                  <option value="12">12 V</option>
-                  <option value="15">15 V</option>
-                  <option value="20">20 V</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Strom</label>
-                <select value={devAmperage} onChange={e => setDevAmperage(Number(e.target.value))} style={{ width: '100%', padding: '0.5rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)' }}>
-                  <option value="0.5">0.5 A</option>
-                  <option value="1">1 A</option>
-                  <option value="2">2 A</option>
-                  <option value="3">3 A</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Hierarchische Lagerort-Auswahl für Geräte */}
-            {renderLocationTreeSelector(devLocParentId, setDevLocParentId, devLocation, setDevLocation, 'Lagerort des Geräts')}
-
-            {/* Foto beschreiben & hinzufügen für Geräte */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Beschreibung (z.B. Frontansicht)" 
-                    value={tempDevImageLabel} 
-                    onChange={e => setTempDevImageLabel(e.target.value)} 
-                    style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
-                  />
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageAttachmentUpload('device', file, tempDevImageLabel);
-                    }} style={{ display: 'none' }} id="dev-cam-upload" />
-                    <label htmlFor="dev-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
-                      📷 Kamera
-                    </label>
-
-                    <input type="file" accept="image/*" onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageAttachmentUpload('device', file, tempDevImageLabel);
-                    }} style={{ display: 'none' }} id="dev-gal-upload" />
-                    <label htmlFor="dev-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
-                      🖼️ Galerie
-                    </label>
-                  </div>
-                </div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Anschluss (Port)</label>
+                <select value={devConnector} onChange={e => setDevConnector(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  <option value="USB-C">USB-C</option>
+                  <option value="USB-A">USB-A</option>
+                  <option value="Micro-USB">Micro-USB</option>
+                  <option value="Lightning">Lightning</option>
+                  <option value="DC">DC</option>
+                  <option value="DC-Jack">DC-Jack</option>
+                  <option value="Other">Andere</option>
+                </select>
               </div>
               <div>
                 {/* Platzhalter */}
               </div>
             </div>
 
-            {/* Preview of uploaded images in Device Form */}
-            {devImages.length > 0 && (
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
-                {devImages.map(img => (
-                  <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
-                    <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
-                      {img.label}
-                    </span>
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveImageAttachment('device', img.id)} 
-                      style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
+            {/* Buttons für einklappbare Optionen */}
+            <div style={{ display: 'flex', gap: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', flexWrap: 'wrap' }}>
+              <button 
+                type="button" 
+                onClick={() => setShowDevLoc(!showDevLoc)} 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+              >
+                📍 {devLocation ? `Lagerort: ${locations.find(l => l.id === devLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setShowDevPhotos(!showDevPhotos)} 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+              >
+                📷 {devImages.length > 0 ? `Fotos (${devImages.length})` : '+ Foto'}
+              </button>
+            </div>
+
+            {/* Hierarchische Lagerort-Auswahl für Geräte */}
+            {showDevLoc && (
+              <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                {renderLocationTreeSelector(devLocParentId, setDevLocParentId, devLocation, setDevLocation, 'Lagerort des Geräts')}
               </div>
             )}
-            {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+
+            {/* Foto beschreiben & hinzufügen für Geräte */}
+            {showDevPhotos && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Beschreibung (z.B. Frontansicht)" 
+                        value={tempDevImageLabel} 
+                        onChange={e => setTempDevImageLabel(e.target.value)} 
+                        style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageAttachmentUpload('device', file, tempDevImageLabel);
+                        }} style={{ display: 'none' }} id="dev-cam-upload" />
+                        <label htmlFor="dev-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
+                          📷 Kamera
+                        </label>
+
+                        <input type="file" accept="image/*" onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageAttachmentUpload('device', file, tempDevImageLabel);
+                        }} style={{ display: 'none' }} id="dev-gal-upload" />
+                        <label htmlFor="dev-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
+                          🖼️ Galerie
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    {/* Platzhalter */}
+                  </div>
+                </div>
+
+                {/* Preview of uploaded images in Device Form */}
+                {devImages.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                    {devImages.map(img => (
+                      <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
+                        <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
+                          {img.label}
+                        </span>
+                        <button 
+                          type="button" 
+                          onClick={() => handleRemoveImageAttachment('device', img.id)} 
+                          style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+              </div>
+            )}
 
             <button type="submit" className="btn-primary">Hinzufügen</button>
           </form>
@@ -2121,17 +2196,35 @@ export default function App() {
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
             <h3>Registrierte Geräte</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
-              {devices.map(d => (
-                <div key={d.id} style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong>{d.name}</strong>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)' }}>{d.requiredVoltage}V @ {d.requiredAmperage}A</span>
+              {devices.length === 0 ? (
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Keine Geräte registriert.</span>
+              ) : (
+                devices.map(d => (
+                  <div 
+                    key={d.id} 
+                    onClick={() => setSelectedDeviceDetails(d)}
+                    style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease' }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong>{d.name}</strong>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', background: 'var(--bg-tertiary)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
+                        {d.manufacturer ? `${d.manufacturer} | ` : ''}{d.requiredConnectorType}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Ort: {d.locationId ? buildLocationPath(d.locationId, locations) : 'Kein Ort'}</span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDeleteDevice(d.id); }} 
+                        style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                      >
+                        <Trash2 size={14} /> Löschen
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ textAlign: 'right', marginTop: '0.5rem' }}>
-                    <button onClick={() => handleDeleteDevice(d.id)} style={{ background: 'none', color: 'var(--error)', fontSize: '0.8rem' }}><Trash2 size={14} /> Löschen</button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -2653,7 +2746,6 @@ export default function App() {
               <div><strong>Name:</strong> {selectedDeviceDetails.name}</div>
               {selectedDeviceDetails.manufacturer && <div><strong>Hersteller:</strong> {selectedDeviceDetails.manufacturer}</div>}
               <div><strong>Anschluss:</strong> {selectedDeviceDetails.requiredConnectorType || 'Nicht spezifiziert'}</div>
-              <div><strong>Benötigte Leistung:</strong> {selectedDeviceDetails.requiredVoltage}V @ {selectedDeviceDetails.requiredAmperage}A</div>
               <div><strong>Lagerort:</strong> {selectedDeviceDetails.locationId ? buildLocationPath(selectedDeviceDetails.locationId, locations) : 'Kein Ort'}</div>
             </div>
 

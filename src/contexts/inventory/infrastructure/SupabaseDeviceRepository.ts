@@ -24,8 +24,6 @@ export class SupabaseDeviceRepository implements IDeviceRepository {
       id: devData.id,
       name: devData.name,
       manufacturer: devData.manufacturer || undefined,
-      requiredVoltage: devData.required_voltage ? Number(devData.required_voltage) : undefined,
-      requiredAmperage: devData.required_amperage ? Number(devData.required_amperage) : undefined,
       requiredConnectorType: devData.required_connector_type || undefined,
       locationId: devData.location_id || undefined,
       compatibleCableIds,
@@ -53,8 +51,6 @@ export class SupabaseDeviceRepository implements IDeviceRepository {
         id: d.id,
         name: d.name,
         manufacturer: d.manufacturer || undefined,
-        requiredVoltage: d.required_voltage ? Number(d.required_voltage) : undefined,
-        requiredAmperage: d.required_amperage ? Number(d.required_amperage) : undefined,
         requiredConnectorType: d.required_connector_type || undefined,
         locationId: d.location_id || undefined,
         compatibleCableIds,
@@ -68,8 +64,6 @@ export class SupabaseDeviceRepository implements IDeviceRepository {
       id: device.id,
       name: device.name,
       manufacturer: device.manufacturer || null,
-      required_voltage: device.requiredVoltage || null,
-      required_amperage: device.requiredAmperage || null,
       required_connector_type: device.requiredConnectorType || null,
       location_id: device.locationId || null
     };
