@@ -20,6 +20,7 @@ export interface Cable {
   locationId?: string; // Verweis auf den Lagerort
   originalDeviceId?: string; // Verweis auf das Originalgerät, falls vorhanden
   assignedDeviceIds?: string[]; // IDs von Geräten, die dieses Kabel laden/verbinden kann
+  assignedCableIds?: string[]; // IDs von Kabeln/Ladegeräten, die mit diesem Kabel verknüpft sind
   isMultiOutput?: boolean; // Für Netzteile mit mehreren Ausgängen
   powerOutputs?: PowerOutput[]; // Spezifische Leistungsdaten für Netzteile
   userId?: string; // Eigentümer des Kabels
@@ -54,6 +55,7 @@ export interface Device {
   name: string;
   manufacturer?: string;
   requiredConnectorType?: string; // z.B. "USB-C", "Micro-USB", "Lightning", "DC-Jack"
+  requiredConnectorType2?: string; // Optionaler zweiter Anschluss
   locationId?: string; // Aufbewahrungsort des Geräts
   compatibleCableIds?: string[]; // IDs von kompatiblen Kabeln
   userId?: string; // Eigentümer des Geräts
@@ -84,9 +86,10 @@ export type CompatibilityResult =
   | { status: 'NO_SPECIFICATION'; message: string };
 
 export function checkPowerCompatibility(cable: Cable, device: Device): CompatibilityResult {
-  const reqConnector = device.requiredConnectorType;
+  const reqConnector1 = device.requiredConnectorType;
+  const reqConnector2 = device.requiredConnectorType2;
   
-  if (!reqConnector) {
+  if (!reqConnector1 && !reqConnector2) {
     return { 
       status: 'NO_SPECIFICATION', 
       message: 'Kein Anschluss am Gerät angegeben.' 
@@ -101,14 +104,17 @@ export function checkPowerCompatibility(cable: Cable, device: Device): Compatibi
     ...(cable.powerOutputs || []).map(o => o.portType)
   ].filter(Boolean);
 
-  const isMatch = cableConnectors.some(c => c === reqConnector);
+  // Check if either connector matches
+  const matchConnector = [reqConnector1, reqConnector2].filter(Boolean).find(req => 
+    cableConnectors.some(c => c === req)
+  );
 
-  if (isMatch) {
-    const matchingPort = (cable.powerOutputs || []).find(o => o.portType === reqConnector) || {
+  if (matchConnector) {
+    const matchingPort = (cable.powerOutputs || []).find(o => o.portType === matchConnector) || {
       voltage: 5,
       amperage: 2,
       wattage: 10,
-      portType: reqConnector as any
+      portType: matchConnector as any
     };
     return {
       status: 'COMPATIBLE',
@@ -116,9 +122,10 @@ export function checkPowerCompatibility(cable: Cable, device: Device): Compatibi
     };
   }
 
+  const reqString = [reqConnector1, reqConnector2].filter(Boolean).join(' oder ');
   return {
     status: 'CONNECTOR_MISMATCH',
-    message: `Anschluss passt nicht: Gerät benötigt ${reqConnector}, Kabel/Lader bietet ${cableConnectors.join(' / ') || 'keine Angabe'}.`
+    message: `Anschluss passt nicht: Gerät benötigt ${reqString}, Kabel/Lader bietet ${cableConnectors.join(' / ') || 'keine Angabe'}.`
   };
 }
 
