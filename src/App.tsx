@@ -245,11 +245,14 @@ export default function App() {
 
   const [selectedCableDetails, setSelectedCableDetails] = useState<Cable | null>(null);
   const [selectedDeviceDetails, setSelectedDeviceDetails] = useState<Device | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; label: string } | null>(null);
 
   // Handhabung des Android-Zurück-Buttons (Hardware Back Button)
   useEffect(() => {
     const handler = CapApp.addListener('backButton', () => {
-      if (selectedCableDetails) {
+      if (lightboxImage) {
+        setLightboxImage(null);
+      } else if (selectedCableDetails) {
         setSelectedCableDetails(null);
       } else if (selectedDeviceDetails) {
         setSelectedDeviceDetails(null);
@@ -265,7 +268,7 @@ export default function App() {
     return () => {
       handler.then(h => h.remove());
     };
-  }, [selectedCableDetails, selectedDeviceDetails, activeTab, settingsView]);
+  }, [lightboxImage, selectedCableDetails, selectedDeviceDetails, activeTab, settingsView]);
 
   const [newCustomPropLabel, setNewCustomPropLabel] = useState('');
   const [tempPropValues, setTempPropValues] = useState<Record<string, string>>({});
@@ -2595,7 +2598,7 @@ export default function App() {
                       <img 
                         src={selectedCableDetails.imageUrl} 
                         alt="Hauptbild" 
-                        onClick={() => window.open(selectedCableDetails.imageUrl, '_blank')}
+                        onClick={() => setLightboxImage({ url: selectedCableDetails.imageUrl!, label: 'Hauptbild' })}
                         style={{ width: '120px', height: '90px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-glass)', cursor: 'zoom-in' }} 
                       />
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center' }}>Hauptbild</span>
@@ -2606,7 +2609,7 @@ export default function App() {
                       <img 
                         src={img.url} 
                         alt={img.label} 
-                        onClick={() => window.open(img.url, '_blank')}
+                        onClick={() => setLightboxImage({ url: img.url, label: img.label })}
                         style={{ width: '120px', height: '90px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-glass)', cursor: 'zoom-in' }} 
                       />
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{img.label}</span>
@@ -2739,7 +2742,7 @@ export default function App() {
                       <img 
                         src={img.url} 
                         alt={img.label} 
-                        onClick={() => window.open(img.url, '_blank')}
+                        onClick={() => setLightboxImage({ url: img.url, label: img.label })}
                         style={{ width: '120px', height: '90px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-glass)', cursor: 'zoom-in' }} 
                       />
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{img.label}</span>
@@ -2769,6 +2772,75 @@ export default function App() {
               </button>
               <button onClick={() => setSelectedDeviceDetails(null)} style={{ flex: 1, background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}>Schließen</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* LIGHTBOX MODAL */}
+      {lightboxImage && (
+        <div 
+          onClick={() => setLightboxImage(null)}
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            width: '100%', 
+            height: '100%', 
+            background: 'rgba(0,0,0,0.85)', 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 2000, 
+            backdropFilter: 'blur(10px)', 
+            padding: '1.5rem' 
+          }}
+        >
+          <div 
+            onClick={e => e.stopPropagation()}
+            style={{ 
+              position: 'relative', 
+              maxWidth: '90%', 
+              maxHeight: '80%', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center',
+              gap: '0.75rem' 
+            }}
+          >
+            <button 
+              onClick={() => setLightboxImage(null)} 
+              style={{ 
+                position: 'absolute', 
+                top: '-40px', 
+                right: '0px', 
+                background: 'none', 
+                border: 'none', 
+                color: 'white', 
+                fontSize: '2rem', 
+                cursor: 'pointer', 
+                lineHeight: 1 
+              }}
+            >
+              &times;
+            </button>
+            <img 
+              src={lightboxImage.url} 
+              alt={lightboxImage.label} 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '80vh', 
+                objectFit: 'contain', 
+                borderRadius: 'var(--radius-sm)', 
+                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }} 
+            />
+            {lightboxImage.label && (
+              <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 600, background: 'rgba(0,0,0,0.6)', padding: '0.3rem 0.75rem', borderRadius: '20px' }}>
+                {lightboxImage.label}
+              </span>
+            )}
           </div>
         </div>
       )}
