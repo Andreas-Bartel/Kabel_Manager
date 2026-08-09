@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer, Settings, ArrowLeft, Home, Folder } from 'lucide-react';
+import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer, Settings, ArrowLeft, Home, Folder, Plug, Zap } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { Cable, Device, StorageLocation, buildLocationPath, checkPowerCompatibility, CompatibilityResult, ImageAttachment, PowerOutput } from './contexts/inventory/domain/types';
 import { LocalStorageCableRepository } from './contexts/inventory/infrastructure/LocalStorageCableRepository';
@@ -29,6 +29,13 @@ const deleteDeviceUseCase = new DeleteDeviceUseCase(cableRepo, deviceRepo);
 const exportUseCase = new ExportUserDataUseCase(cableRepo, deviceRepo, locationRepo);
 const getCableByQrUseCase = new GetCableByQrPayloadUseCase(cableRepo);
 
+const USBAIcon = ({ size = 18 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <rect x="3" y="6" width="18" height="12" rx="1.5" ry="1.5"/>
+    <rect x="6" y="12" width="12" height="4" rx="0.5" ry="0.5" fill="currentColor" stroke="none"/>
+  </svg>
+);
+
 const generateUUID = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -56,8 +63,26 @@ export default function App() {
   // Dark Mode State
   const [darkMode, setDarkMode] = useState(true);
 
+  // Responsive Width
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 800);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Tab Navigation
-  const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'locations' | 'cables' | 'chargers' | 'devices' | 'scan' | 'settings'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'locations' | 'cables' | 'chargers' | 'devices' | 'scan' | 'settings' | 'inventory'>('home');
+
+  const [inventoryTypeFilter, setInventoryTypeFilter] = useState<'all' | 'cables' | 'chargers' | 'devices'>('all');
+  const [inventoryLocationFilter, setInventoryLocationFilter] = useState<string | null>(null);
+  const [inventoryLocCurrentParentId, setInventoryLocCurrentParentId] = useState<string | undefined>(undefined);
+
+  // Clear search on tab switch
+  useEffect(() => {
+    setSearchQuery('');
+  }, [activeTab]);
 
   // Form States - Location
   const [locName, setLocName] = useState('');
@@ -119,7 +144,8 @@ export default function App() {
   const [editExpandedProps, setEditExpandedProps] = useState<Record<string, boolean>>({});
   const [editShowLoc, setEditShowLoc] = useState(false);
   const [editShowPhotos, setEditShowPhotos] = useState(false);
-
+  const [editIsEditing, setEditIsEditing] = useState(false);
+  const [editDevIsEditing, setEditDevIsEditing] = useState(false);
   // Device Edit States
   const [editDevManufacturer, setEditDevManufacturer] = useState('');
   const [editDevConnector, setEditDevConnector] = useState('USB-C');
@@ -321,10 +347,38 @@ export default function App() {
   const [selectedDeviceDetails, setSelectedDeviceDetails] = useState<Device | null>(null);
   const [lightboxImage, setLightboxImage] = useState<{ url: string; label: string } | null>(null);
 
+  // Gallery Mode State
+  const [galleryImages, setGalleryImages] = useState<ImageAttachment[] | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState<number>(0);
+  const [galleryZoomed, setGalleryZoomed] = useState<boolean>(false);
+  const galleryTouchStartX = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    galleryTouchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = galleryTouchStartX.current - e.changedTouches[0].clientX;
+    if (diff > 50) {
+      if (galleryImages && galleryIndex < galleryImages.length - 1) {
+        setGalleryIndex(prev => prev + 1);
+        setGalleryZoomed(false);
+      }
+    } else if (diff < -50) {
+      if (galleryImages && galleryIndex > 0) {
+        setGalleryIndex(prev => prev - 1);
+        setGalleryZoomed(false);
+      }
+    }
+  };
+
   // Handhabung des Android-Zurück-Buttons (Hardware Back Button)
   useEffect(() => {
     const handler = CapApp.addListener('backButton', () => {
-      if (lightboxImage) {
+      if (galleryImages) {
+        setGalleryImages(null);
+        setGalleryZoomed(false);
+      } else if (lightboxImage) {
         setLightboxImage(null);
       } else if (linkingSource) {
         setLinkingSource(null);
@@ -335,6 +389,13 @@ export default function App() {
         setSelectedDeviceDetails(null);
       } else if (activeTab === 'settings' && settingsView !== 'menu') {
         setSettingsView('menu');
+      } else if (activeTab === 'inventory') {
+        if (inventoryLocationFilter) {
+          setInventoryLocationFilter(null);
+          setInventoryLocCurrentParentId(undefined);
+        } else {
+          setActiveTab('home');
+        }
       } else if (activeTab !== 'home') {
         setActiveTab('home');
       } else {
@@ -345,7 +406,7 @@ export default function App() {
     return () => {
       handler.then(h => h.remove());
     };
-  }, [lightboxImage, linkingSource, selectedCableDetails, selectedDeviceDetails, activeTab, settingsView]);
+  }, [galleryImages, lightboxImage, linkingSource, selectedCableDetails, selectedDeviceDetails, activeTab, settingsView, inventoryLocationFilter]);
 
   const [newCustomPropLabel, setNewCustomPropLabel] = useState('');
   const [tempPropValues, setTempPropValues] = useState<Record<string, string>>({});
@@ -520,6 +581,28 @@ export default function App() {
       root.style.setProperty('--icon-filter', 'none');
     }
   }, [darkMode]);
+
+  // Helper to get all child location IDs recursively
+  const getSubLocationIds = (locId: string): string[] => {
+    const children = locations.filter(l => l.parentLocationId === locId);
+    return [locId, ...children.flatMap(c => getSubLocationIds(c.id))];
+  };
+
+  // Helper to count components at a specific location recursively
+  const getComponentCountAtLocation = (locId: string): number => {
+    const allLocIds = getSubLocationIds(locId);
+    const cabCount = cables.filter(c => c.locationId && allLocIds.includes(c.locationId)).length;
+    const devCount = devices.filter(d => d.locationId && allLocIds.includes(d.locationId)).length;
+    return cabCount + devCount;
+  };
+
+  // Helper to filter any list of components by location recursively
+  const filterByLocation = <T extends { locationId?: string }>(items: T[], locId: string | null): T[] => {
+    if (!locId) return items;
+    if (locId === 'none') return items.filter(item => !item.locationId);
+    const allLocIds = getSubLocationIds(locId);
+    return items.filter(item => item.locationId && allLocIds.includes(item.locationId));
+  };
 
   const refreshData = async () => {
     const c = await cableRepo.getAllCables();
@@ -951,8 +1034,8 @@ export default function App() {
       
       // Eigenschaften für Ladegeräte
       chargerType: cabIsMulti ? cabChargerType : undefined,
-      fixedCableLength: cabIsMulti && (cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') ? (cabFixedLength || undefined) : undefined,
-      fixedCablePower: cabIsMulti && (cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') ? (cabFixedPower || undefined) : undefined,
+      fixedCableLength: cabIsMulti && (cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') ? (cabFixedLength ? (cabFixedLength.trim().replace(/m$/, '') + 'm') : undefined) : undefined,
+      fixedCablePower: cabIsMulti && (cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') ? (cabFixedPower ? (cabFixedPower.trim().replace(/W$/, '') + 'W') : undefined) : undefined,
       fixedCableConnector: cabIsMulti && (cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') ? (cabFixedConnector || undefined) : undefined,
 
       // Neue Eigenschaften
@@ -1017,6 +1100,18 @@ export default function App() {
       updatedAt: new Date().toISOString()
     };
     await cableRepo.saveCable(duplicatedCable);
+    refreshData();
+  };
+
+  const handleDuplicateDevice = async (device: Device) => {
+    const duplicatedDevice: Device = {
+      ...device,
+      id: generateUUID(),
+      name: `${device.name} (Kopie)`,
+      compatibleCableIds: [], // Verknüpfungen zurücksetzen
+      createdAt: new Date().toISOString()
+    };
+    await deviceRepo.saveDevice(duplicatedDevice);
     refreshData();
   };
 
@@ -1183,6 +1278,7 @@ export default function App() {
 
   const openCableDetails = (cable: Cable) => {
     setSelectedCableDetails(cable);
+    setEditIsEditing(false);
     setEditName(cable.name);
     setEditBrand(cable.brand || '');
     setEditConnectorType1(cable.connectorType1 || cable.connectorType || 'USB-C');
@@ -1201,8 +1297,8 @@ export default function App() {
     setEditCustomPropValues(cable.additionalProperties || {});
     setEditIsMulti(!!cable.isMultiOutput);
     setEditChargerType(cable.chargerType || 'only_ports');
-    setEditFixedLength(cable.fixedCableLength || '');
-    setEditFixedPower(cable.fixedCablePower || '');
+    setEditFixedLength((cable.fixedCableLength || '').replace(/m$/, ''));
+    setEditFixedPower((cable.fixedCablePower || '').replace(/W$/, ''));
     setEditFixedConnector(cable.fixedCableConnector || 'USB-C');
     setEditPorts(cable.powerOutputs || []);
     
@@ -1225,6 +1321,7 @@ export default function App() {
 
   const openDeviceDetails = (device: Device) => {
     setSelectedDeviceDetails(device);
+    setEditDevIsEditing(false);
     setEditName(device.name);
     setEditDevManufacturer(device.manufacturer || '');
     setEditDevConnector(device.requiredConnectorType || 'USB-C');
@@ -1303,8 +1400,8 @@ export default function App() {
       locationId: editLocation || undefined,
       isMultiOutput: editIsMulti ? true : undefined,
       chargerType: editIsMulti ? editChargerType : undefined,
-      fixedCableLength: editIsMulti && (editChargerType === 'only_fixed_cable' || editChargerType === 'hybrid') ? editFixedLength : undefined,
-      fixedCablePower: editIsMulti && (editChargerType === 'only_fixed_cable' || editChargerType === 'hybrid') ? editFixedPower : undefined,
+      fixedCableLength: editIsMulti && (editChargerType === 'only_fixed_cable' || editChargerType === 'hybrid') ? (editFixedLength ? (editFixedLength.trim().replace(/m$/, '') + 'm') : undefined) : undefined,
+      fixedCablePower: editIsMulti && (editChargerType === 'only_fixed_cable' || editChargerType === 'hybrid') ? (editFixedPower ? (editFixedPower.trim().replace(/W$/, '') + 'W') : undefined) : undefined,
       fixedCableConnector: editIsMulti && (editChargerType === 'only_fixed_cable' || editChargerType === 'hybrid') ? (editFixedConnector as any) : undefined,
       powerOutputs,
       images: editImages.length > 0 ? editImages : undefined,
@@ -1429,6 +1526,22 @@ export default function App() {
       setScanError(err.message);
     }
   };
+
+  // Filtered components for Inventory view
+  const filteredCablesForInventory = filterByLocation(
+    cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)),
+    inventoryLocationFilter
+  );
+  
+  const filteredChargersForInventory = filterByLocation(
+    cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)),
+    inventoryLocationFilter
+  );
+
+  const filteredDevicesForInventory = filterByLocation(
+    devices,
+    inventoryLocationFilter
+  );
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -1555,28 +1668,107 @@ export default function App() {
             <p style={{ color: 'var(--text-muted)' }}>Keine passenden Kabel/Geräte gefunden.</p>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {searchResults.cables.map(c => (
-              <div 
-                key={c.id} 
-                onClick={() => setSelectedCableDetails(c)}
-                style={{ padding: '0.65rem 0.85rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', cursor: 'pointer', transition: 'transform 0.15s ease' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-              >
-                <span>🔌 {c.name} ({c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType})</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Auswählen</span>
-              </div>
-            ))}
+            {searchResults.cables.map(c => {
+              const isCharger = c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0);
+              return (
+                <div 
+                  key={c.id} 
+                  onClick={() => { openCableDetails(c); setSearchQuery(''); }}
+                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      borderRadius: 'var(--radius-xs)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <img 
+                        src={c.images && c.images.length > 0 ? c.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                        alt="" 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: c.images && c.images.length > 0 ? 'cover' : 'contain',
+                          opacity: c.images && c.images.length > 0 ? 1 : 0.4,
+                          padding: c.images && c.images.length > 0 ? 0 : '8px'
+                        }} 
+                      />
+                    </div>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{c.name}</strong>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                    <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                      {isCharger ? '🔌 Netzteil' : '🔌 Kabel'}: {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
+                    </span>
+                    {c.brand && (
+                      <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                        🏷️ {c.brand}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
             {searchResults.devices.map(d => (
               <div 
                 key={d.id} 
-                onClick={() => setSelectedDeviceDetails(d)}
-                style={{ padding: '0.65rem 0.85rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', display: 'flex', justifyContent: 'space-between', cursor: 'pointer', transition: 'transform 0.15s ease' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                onClick={() => { openDeviceDetails(d); setSearchQuery(''); }}
+                style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
               >
-                <span>📱 {d.name} ({d.manufacturer || 'Generisch'})</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--accent-secondary)', fontWeight: 600 }}>Auswählen</span>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    borderRadius: 'var(--radius-xs)', 
+                    overflow: 'hidden', 
+                    border: '1px solid var(--border-glass)', 
+                    background: 'var(--bg-tertiary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <img 
+                      src={d.images && d.images.length > 0 ? d.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                      alt="" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: d.images && d.images.length > 0 ? 'cover' : 'contain',
+                        opacity: d.images && d.images.length > 0 ? 1 : 0.4,
+                        padding: d.images && d.images.length > 0 ? 0 : '8px'
+                      }} 
+                    />
+                  </div>
+                  <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{d.name}</strong>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  Ort: {d.locationId ? buildLocationPath(d.locationId, locations) : 'Kein Ort'}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                  <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                    📱 Gerät: {d.requiredConnectorType}{d.requiredConnectorType2 ? `, ${d.requiredConnectorType2}` : ''}
+                  </span>
+                  {d.manufacturer && (
+                    <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                      🏷️ {d.manufacturer}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -1585,154 +1777,208 @@ export default function App() {
 
       {/* HOME DASHBOARD TILE GRID */}
       {activeTab === 'home' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginTop: '0rem' }}>
-          {/* Tile 1: Kabel */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '0rem' }}>
+          {/* Hero Inventar Tile */}
           <div 
-            onClick={() => setActiveTab('cables')} 
+            onClick={() => setActiveTab('inventory')} 
             className="glass-panel tile-btn" 
             style={{ 
-              padding: '2rem 1.25rem', 
+              padding: '1.5rem 1.25rem', 
               textAlign: 'center', 
               cursor: 'pointer', 
               display: 'flex', 
-              flexDirection: 'column', 
               alignItems: 'center', 
-              gap: '1rem', 
+              justifyContent: 'center',
+              gap: '1.5rem', 
               borderRadius: 'var(--radius-md)', 
-              position: 'relative' 
+              position: 'relative',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
+              border: '1px solid rgba(99, 102, 241, 0.3)'
             }}
           >
-            {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length > 0 && (
+            {(cables.length + devices.length) > 0 && (
               <span style={{
                 position: 'absolute',
-                top: '-16px',
-                right: '-16px',
+                top: '-10px',
+                right: '-10px',
                 background: 'var(--accent-gradient)',
                 color: 'white',
                 borderRadius: '50%',
-                minWidth: '40px',
-                height: '40px',
+                minWidth: '32px',
+                height: '32px',
                 padding: '0 6px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.1rem',
+                fontSize: '0.9rem',
                 fontWeight: 700,
                 boxShadow: '0 4px 12px rgba(99, 102, 241, 0.5)',
-                border: '3px solid var(--bg-primary)',
+                border: '2px solid var(--bg-primary)',
                 zIndex: 10
               }}>
-                {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length}
+                {cables.length + devices.length}
               </span>
             )}
-            <img src="/icons/cables.png" alt="Kabel" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-            <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Kabel</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-tertiary)', borderRadius: '50%', width: '56px', height: '56px', border: '1px solid var(--border-glass)', flexShrink: 0 }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" stroke-linecap="round" stroke-linejoin="round" style={{ color: 'var(--accent-primary)' }}>
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-primary)', display: 'block' }}>Inventar</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Alle Kabel, Ladegeräte und Geräte im Überblick</span>
+            </div>
           </div>
 
-          {/* Tile 2: Ladegeräte */}
-          <div 
-            onClick={() => setActiveTab('chargers')} 
-            className="glass-panel tile-btn" 
-            style={{ 
-              padding: '2rem 1.25rem', 
-              textAlign: 'center', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              gap: '1rem', 
-              borderRadius: 'var(--radius-md)', 
-              position: 'relative' 
-            }}
-          >
-            {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-16px',
-                right: '-16px',
-                background: 'var(--accent-gradient)',
-                color: 'white',
-                borderRadius: '50%',
-                minWidth: '40px',
-                height: '40px',
-                padding: '0 6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.1rem',
-                fontWeight: 700,
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.5)',
-                border: '3px solid var(--bg-primary)',
-                zIndex: 10
-              }}>
-                {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length}
-              </span>
-            )}
-            <img src="/icons/chargers.png" alt="Ladegeräte" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-            <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Ladegeräte</span>
-          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+            {/* Tile 1: Kabel */}
+            <div 
+              onClick={() => setActiveTab('cables')} 
+              className="glass-panel tile-btn" 
+              style={{ 
+                padding: '2rem 1.25rem', 
+                textAlign: 'center', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                gap: '1rem', 
+                borderRadius: 'var(--radius-md)', 
+                position: 'relative' 
+              }}
+            >
+              {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-16px',
+                  right: '-16px',
+                  background: 'var(--accent-gradient)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  minWidth: '40px',
+                  height: '40px',
+                  padding: '0 6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.5)',
+                  border: '3px solid var(--bg-primary)',
+                  zIndex: 10
+                }}>
+                  {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).length}
+                </span>
+              )}
+              <img src="/icons/cables.png" alt="Kabel" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Kabel</span>
+            </div>
 
-          {/* Tile 3: Geräte */}
-          <div 
-            onClick={() => setActiveTab('devices')} 
-            className="glass-panel tile-btn" 
-            style={{ 
-              padding: '2rem 1.25rem', 
-              textAlign: 'center', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              gap: '1rem', 
-              borderRadius: 'var(--radius-md)', 
-              position: 'relative' 
-            }}
-          >
-            {devices.length > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-16px',
-                right: '-16px',
-                background: 'var(--accent-gradient)',
-                color: 'white',
-                borderRadius: '50%',
-                minWidth: '40px',
-                height: '40px',
-                padding: '0 6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.1rem',
-                fontWeight: 700,
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.5)',
-                border: '3px solid var(--bg-primary)',
-                zIndex: 10
-              }}>
-                {devices.length}
-              </span>
-            )}
-            <img src="/icons/devices.png" alt="Geräte" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-            <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Geräte</span>
-          </div>
+            {/* Tile 2: Ladegeräte */}
+            <div 
+              onClick={() => setActiveTab('chargers')} 
+              className="glass-panel tile-btn" 
+              style={{ 
+                padding: '2rem 1.25rem', 
+                textAlign: 'center', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                gap: '1rem', 
+                borderRadius: 'var(--radius-md)', 
+                position: 'relative' 
+              }}
+            >
+              {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-16px',
+                  right: '-16px',
+                  background: 'var(--accent-gradient)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  minWidth: '40px',
+                  height: '40px',
+                  padding: '0 6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.5)',
+                  border: '3px solid var(--bg-primary)',
+                  zIndex: 10
+                }}>
+                  {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).length}
+                </span>
+              )}
+              <img src="/icons/chargers.png" alt="Ladegeräte" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Ladegeräte</span>
+            </div>
 
-          {/* Tile 4: Lagerorte */}
-          <div 
-            onClick={() => setActiveTab('locations')} 
-            className="glass-panel tile-btn" 
-            style={{ 
-              padding: '2rem 1.25rem', 
-              textAlign: 'center', 
-              cursor: 'pointer', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              gap: '1rem', 
-              borderRadius: 'var(--radius-md)', 
-              position: 'relative' 
-            }}
-          >
-            <img src="/icons/locations.png" alt="Lagerorte" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-            <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Lagerorte</span>
+            {/* Tile 3: Geräte */}
+            <div 
+              onClick={() => setActiveTab('devices')} 
+              className="glass-panel tile-btn" 
+              style={{ 
+                padding: '2rem 1.25rem', 
+                textAlign: 'center', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                gap: '1rem', 
+                borderRadius: 'var(--radius-md)', 
+                position: 'relative' 
+              }}
+            >
+              {devices.length > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-16px',
+                  right: '-16px',
+                  background: 'var(--accent-gradient)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  minWidth: '40px',
+                  height: '40px',
+                  padding: '0 6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.5)',
+                  border: '3px solid var(--bg-primary)',
+                  zIndex: 10
+                }}>
+                  {devices.length}
+                </span>
+              )}
+              <img src="/icons/devices.png" alt="Geräte" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Geräte</span>
+            </div>
+
+            {/* Tile 4: Lagerorte */}
+            <div 
+              onClick={() => setActiveTab('locations')} 
+              className="glass-panel tile-btn" 
+              style={{ 
+                padding: '2rem 1.25rem', 
+                textAlign: 'center', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                gap: '1rem', 
+                borderRadius: 'var(--radius-md)', 
+                position: 'relative' 
+              }}
+            >
+              <img src="/icons/locations.png" alt="Lagerorte" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
+              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Lagerorte</span>
+            </div>
           </div>
         </div>
       )}
@@ -1840,6 +2086,518 @@ export default function App() {
               <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>{scanError}</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB: INVENTORY */}
+      {activeTab === 'inventory' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style={{ color: 'var(--accent-primary)' }}>
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+              <h3 style={{ margin: 0 }}>Inventar</h3>
+            </div>
+            {inventoryLocationFilter && (
+              <button 
+                onClick={() => { setInventoryLocationFilter(null); setInventoryLocCurrentParentId(undefined); }}
+                className="btn-secondary"
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }}
+              >
+                Filter aufheben
+              </button>
+            )}
+          </div>
+
+          {/* Type filter segmented buttons */}
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            {(['all', 'cables', 'chargers', 'devices'] as const).map(type => {
+              const label = type === 'all' ? 'Alle' : type === 'cables' ? 'Kabel' : type === 'chargers' ? 'Ladegeräte' : 'Geräte';
+              const count = type === 'all' 
+                ? (filteredCablesForInventory.length + filteredChargersForInventory.length + filteredDevicesForInventory.length)
+                : type === 'cables' 
+                  ? filteredCablesForInventory.length 
+                  : type === 'chargers' 
+                    ? filteredChargersForInventory.length 
+                    : filteredDevicesForInventory.length;
+              const isSelected = inventoryTypeFilter === type;
+              return (
+                <button
+                  key={type}
+                  onClick={() => setInventoryTypeFilter(type)}
+                  style={{ 
+                    fontSize: '0.8rem', 
+                    padding: '0.4rem 0.8rem', 
+                    borderRadius: '20px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.35rem',
+                    border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                    background: isSelected ? 'var(--accent-gradient)' : 'var(--bg-secondary)',
+                    color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    boxShadow: isSelected ? '0 4px 12px var(--accent-glow)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {label} <span style={{ fontSize: '0.75rem', opacity: 0.8, background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--bg-tertiary)', padding: '0.05rem 0.35rem', borderRadius: '10px', color: isSelected ? '#ffffff' : 'var(--text-secondary)' }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Hierarchical Location selector */}
+          <div className="glass-panel" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
+              Lagerort-Filter
+            </div>
+
+            {/* Breadcrumbs path */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', background: 'rgba(0,0,0,0.15)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
+              <span 
+                onClick={() => { setInventoryLocationFilter(null); setInventoryLocCurrentParentId(undefined); }}
+                style={{ cursor: 'pointer', color: !inventoryLocationFilter ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: !inventoryLocationFilter ? 'bold' : 'normal' }}
+              >
+                📍 Home [{cables.length + devices.length}]
+              </span>
+              {inventoryLocationFilter === 'none' && (
+                <>
+                  <span style={{ color: 'var(--text-secondary)' }}>&gt;</span>
+                  <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>
+                    Ohne Lagerort [{(cables.filter(c => !c.locationId).length + devices.filter(d => !d.locationId).length)}]
+                  </span>
+                </>
+              )}
+              {(() => {
+                const getInventoryPathNodes = (parentId: string | undefined): StorageLocation[] => {
+                  if (!parentId) return [];
+                  const loc = locations.find(l => l.id === parentId);
+                  if (!loc) return [];
+                  return [...getInventoryPathNodes(loc.parentLocationId), loc];
+                };
+                const inventoryBreadcrumbs = getInventoryPathNodes(inventoryLocCurrentParentId);
+                return inventoryBreadcrumbs.map((node) => {
+                  const count = getComponentCountAtLocation(node.id);
+                  const isActive = inventoryLocationFilter === node.id;
+                  return (
+                    <React.Fragment key={node.id}>
+                      <span style={{ color: 'var(--text-secondary)' }}>&gt;</span>
+                      <span 
+                        onClick={() => { setInventoryLocationFilter(node.id); setInventoryLocCurrentParentId(node.id); }}
+                        style={{ cursor: 'pointer', color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: isActive ? 'bold' : 'normal' }}
+                      >
+                        {node.name} [{count}]
+                      </span>
+                    </React.Fragment>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Sub-locations list at the current parent level */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '0.4rem', 
+              maxHeight: '180px', 
+              overflowY: 'auto', 
+              borderLeft: '2px solid var(--accent-glow)', 
+              paddingLeft: '0.75rem', 
+              marginTop: '0.25rem' 
+            }}>
+              {/* If current parent is undefined (Home), show "Ohne Lagerort" and top-level locations */}
+              {inventoryLocCurrentParentId === undefined ? (
+                <>
+                  {/* Ohne Lagerort */}
+                  {(() => {
+                    const countNoLoc = cables.filter(c => !c.locationId).length + devices.filter(d => !d.locationId).length;
+                    if (countNoLoc === 0) return null;
+                    const isSelected = inventoryLocationFilter === 'none';
+                    return (
+                      <div 
+                        onClick={() => setInventoryLocationFilter('none')}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          padding: '0.4rem 0.6rem', 
+                          borderRadius: 'var(--radius-sm)', 
+                          background: isSelected ? 'var(--accent-glow)' : 'rgba(255,255,255,0.02)', 
+                          border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                          📦 Ohne Lagerort
+                        </span>
+                        <span style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                          {countNoLoc}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Top level locations */}
+                  {locations.filter(l => !l.parentLocationId).map(loc => {
+                    const count = getComponentCountAtLocation(loc.id);
+                    const isSelected = inventoryLocationFilter === loc.id;
+                    const hasSub = locations.some(l => l.parentLocationId === loc.id);
+                    return (
+                      <div 
+                        key={loc.id}
+                        onClick={() => {
+                          setInventoryLocationFilter(loc.id);
+                          if (hasSub) {
+                            setInventoryLocCurrentParentId(loc.id);
+                          }
+                        }}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          padding: '0.4rem 0.6rem', 
+                          borderRadius: 'var(--radius-sm)', 
+                          background: isSelected ? 'var(--accent-glow)' : 'rgba(255,255,255,0.02)', 
+                          border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                          📁 {loc.name}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                            {count}
+                          </span>
+                          {hasSub && <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 'bold' }}>&gt;</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              ) : (
+                // Nested sub-locations
+                <>
+                  {/* Back to previous level button */}
+                  <div 
+                    onClick={() => {
+                      const currentLoc = locations.find(l => l.id === inventoryLocCurrentParentId);
+                      const parentId = currentLoc ? currentLoc.parentLocationId : undefined;
+                      setInventoryLocCurrentParentId(parentId);
+                      setInventoryLocationFilter(parentId || null);
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.35rem', 
+                      padding: '0.35rem 0.5rem', 
+                      fontSize: '0.75rem', 
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <span>← Eine Ebene nach oben</span>
+                  </div>
+
+                  {locations.filter(l => l.parentLocationId === inventoryLocCurrentParentId).map(loc => {
+                    const count = getComponentCountAtLocation(loc.id);
+                    const isSelected = inventoryLocationFilter === loc.id;
+                    const hasSub = locations.some(l => l.parentLocationId === loc.id);
+                    return (
+                      <div 
+                        key={loc.id}
+                        onClick={() => {
+                          setInventoryLocationFilter(loc.id);
+                          if (hasSub) {
+                            setInventoryLocCurrentParentId(loc.id);
+                          }
+                        }}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          padding: '0.4rem 0.6rem', 
+                          borderRadius: 'var(--radius-sm)', 
+                          background: isSelected ? 'var(--accent-glow)' : 'rgba(255,255,255,0.02)', 
+                          border: isSelected ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                          📁 {loc.name}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                            {count}
+                          </span>
+                          {hasSub && <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 'bold' }}>&gt;</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Unified list of filtered components */}
+          <div className="glass-panel" style={{ padding: '1.25rem' }}>
+            <h3>Komponenten</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+              {/* Cables list */}
+              {(inventoryTypeFilter === 'all' || inventoryTypeFilter === 'cables') && filteredCablesForInventory.map(c => (
+                <div 
+                  key={c.id} 
+                  onClick={() => openCableDetails(c)}
+                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  {/* UPPER AREA: Image left, Name right */}
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      borderRadius: 'var(--radius-xs)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <img 
+                        src={c.images && c.images.length > 0 ? c.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                        alt="" 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: c.images && c.images.length > 0 ? 'cover' : 'contain',
+                          opacity: c.images && c.images.length > 0 ? 1 : 0.4,
+                          padding: c.images && c.images.length > 0 ? 0 : '8px'
+                        }} 
+                      />
+                    </div>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{c.name}</strong>
+                  </div>
+
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
+                  </div>
+
+                  {/* Chips für Eigenschaften */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                    {/* Stecker-Typ als Eigenschaft */}
+                    <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                      🔌 {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
+                    </span>
+                    {/* Hersteller als Eigenschaft */}
+                    {c.brand && (
+                      <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                        🏷️ {c.brand}
+                      </span>
+                    )}
+                    {c.length && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>📏 {c.length}</span>}
+                    {c.color && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🎨 {c.color}</span>}
+                    {c.condition && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>✨ {c.condition}</span>}
+                    {c.material && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🧵 {c.material}</span>}
+                    {c.cableStandard1 && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>💻 Std. 1: {c.cableStandard1}</span>}
+                    {c.cableStandard2 && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>💻 Std. 2: {c.cableStandard2}</span>}
+                    {c.dataRate && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>⚡ {c.dataRate}</span>}
+                    {c.chargingPower && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🔌 {c.chargingPower}</span>}
+                    
+                    {c.additionalProperties && Object.entries(c.additionalProperties).map(([propId, val]) => {
+                      const propDef = customProperties.find(p => p.id === propId);
+                      const label = propDef ? propDef.label : propId;
+                      return val ? (
+                        <span key={propId} style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                          🏷️ {label}: {val}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {/* Chargers list */}
+              {(inventoryTypeFilter === 'all' || inventoryTypeFilter === 'chargers') && filteredChargersForInventory.map(c => (
+                <div 
+                  key={c.id} 
+                  onClick={() => openCableDetails(c)}
+                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  {/* UPPER AREA: Image left, Name right */}
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      borderRadius: 'var(--radius-xs)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <img 
+                        src={c.images && c.images.length > 0 ? c.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                        alt="" 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: c.images && c.images.length > 0 ? 'cover' : 'contain',
+                          opacity: c.images && c.images.length > 0 ? 1 : 0.4,
+                          padding: c.images && c.images.length > 0 ? 0 : '8px'
+                        }} 
+                      />
+                    </div>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{c.name}</strong>
+                  </div>
+
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
+                  </div>
+
+                  {/* Chips für Eigenschaften */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                    {/* Ladegerät-Typ als Eigenschaft */}
+                    <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                      🔌 {c.chargerType === 'only_fixed_cable' ? 'Kabel-Netzteil' : c.chargerType === 'hybrid' ? 'Hybrid-Lader' : 'Port-Lader'}
+                    </span>
+                    {/* Hersteller als Eigenschaft */}
+                    {c.brand && (
+                      <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                        🏷️ {c.brand}
+                      </span>
+                    )}
+                    {c.length && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>📏 {c.length}</span>}
+                    {c.color && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🎨 {c.color}</span>}
+                    {c.condition && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>✨ {c.condition}</span>}
+                    {c.material && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🧵 {c.material}</span>}
+                    {c.dataRate && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>⚡ {c.dataRate}</span>}
+                    {c.chargingPower && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🔌 {c.chargingPower}</span>}
+                    
+                    {c.additionalProperties && Object.entries(c.additionalProperties).map(([propId, val]) => {
+                      const propDef = customProperties.find(p => p.id === propId);
+                      const label = propDef ? propDef.label : propId;
+                      return val ? (
+                        <span key={propId} style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                          🏷️ {label}: {val}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+
+                  {/* Ports / Festes Kabel Detail-Info */}
+                  <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', borderTop: '1px dashed var(--border-glass)', paddingTop: '0.4rem' }}>
+                    {/* Festes Kabel */}
+                    {(c.chargerType === 'only_fixed_cable' || c.chargerType === 'hybrid' || c.fixedCableConnector) && (
+                      <div style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-primary)' }}>
+                        <span>🪢</span>
+                        <span>Festes Kabel: <strong>{c.fixedCableConnector || c.connectorType}</strong> ({c.fixedCableLength ? c.fixedCableLength : 'k.A.'}{c.fixedCablePower ? `, ${c.fixedCablePower}` : ''})</span>
+                      </div>
+                    )}
+                    {/* Ports */}
+                    {(c.chargerType === 'only_ports' || c.chargerType === 'hybrid' || !c.chargerType) && c.powerOutputs && c.powerOutputs.length > 0 && (
+                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Ports:</span>
+                        {c.powerOutputs.map((p, i) => (
+                          <span key={i} style={{ fontSize: '0.7rem', background: 'var(--accent-glow)', color: 'var(--accent-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                            {p.portType}: {p.wattage ? `${p.wattage}W` : `${p.voltage * p.amperage}W`} ({p.voltage}V / {p.amperage}A)
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Devices list */}
+              {(inventoryTypeFilter === 'all' || inventoryTypeFilter === 'devices') && filteredDevicesForInventory.map(d => (
+                <div 
+                  key={d.id} 
+                  onClick={() => openDeviceDetails(d)}
+                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  {/* UPPER AREA: Image left, Name right */}
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      borderRadius: 'var(--radius-xs)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <img 
+                        src={d.images && d.images.length > 0 ? d.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                        alt="" 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: d.images && d.images.length > 0 ? 'cover' : 'contain',
+                          opacity: d.images && d.images.length > 0 ? 1 : 0.4,
+                          padding: d.images && d.images.length > 0 ? 0 : '8px'
+                        }} 
+                      />
+                    </div>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{d.name}</strong>
+                  </div>
+
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    Ort: {d.locationId ? buildLocationPath(d.locationId, locations) : 'Kein Ort'}
+                  </div>
+
+                  {/* Chips für Eigenschaften */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                    {/* Anschluss/Port als Eigenschaft */}
+                    <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                      🔌 {d.requiredConnectorType}{d.requiredConnectorType2 ? `, ${d.requiredConnectorType2}` : ''}
+                    </span>
+                    {/* Hersteller als Eigenschaft */}
+                    {d.manufacturer && (
+                      <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                        🏷️ {d.manufacturer}
+                      </span>
+                    )}
+                    
+                    {/* Custom Properties */}
+                    {d.additionalProperties && Object.entries(d.additionalProperties).map(([propId, val]) => {
+                      const propDef = customProperties.find(p => p.id === propId);
+                      const label = propDef ? propDef.label : propId;
+                      return val ? (
+                        <span key={propId} style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                          🏷️ {label}: {val}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {/* Empty state */}
+              {((inventoryTypeFilter === 'all' && filteredCablesForInventory.length === 0 && filteredChargersForInventory.length === 0 && filteredDevicesForInventory.length === 0) ||
+                (inventoryTypeFilter === 'cables' && filteredCablesForInventory.length === 0) ||
+                (inventoryTypeFilter === 'chargers' && filteredChargersForInventory.length === 0) ||
+                (inventoryTypeFilter === 'devices' && filteredDevicesForInventory.length === 0)) && (
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '1rem 0' }}>
+                  Keine passenden Komponenten gefunden.
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1951,7 +2709,7 @@ export default function App() {
               (propertyAssignments.chargingPower?.includes('cable') && expandedCabProps.chargingPower) ||
               customProperties.some(p => propertyAssignments[p.id]?.includes('cable') && expandedCabProps[p.id])
             ) && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
                 {propertyAssignments.brand?.includes('cable') && expandedCabProps.brand && (
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Marke</label>
@@ -2243,25 +3001,55 @@ export default function App() {
                 <div 
                   key={c.id} 
                   onClick={() => openCableDetails(c)}
-                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease' }}
+                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <strong>{c.name}</strong>
-                      {c.brand && <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--accent-primary)', fontWeight: 600 }}>({c.brand})</span>}
+                  {/* UPPER AREA: Image left, Name right */}
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      borderRadius: 'var(--radius-xs)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <img 
+                        src={c.images && c.images.length > 0 ? c.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                        alt="" 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: c.images && c.images.length > 0 ? 'cover' : 'contain',
+                          opacity: c.images && c.images.length > 0 ? 1 : 0.4,
+                          padding: c.images && c.images.length > 0 ? 0 : '8px'
+                        }} 
+                      />
                     </div>
-                    <span style={{ fontSize: '0.8rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
-                      {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
-                    </span>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{c.name}</strong>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                     Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
                   </div>
 
-                  {/* Chips für neue Eigenschaften */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
+                  {/* Chips für Eigenschaften */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                    {/* Stecker-Typ als Eigenschaft */}
+                    <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                      🔌 {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
+                    </span>
+                    {/* Hersteller als Eigenschaft */}
+                    {c.brand && (
+                      <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                        🏷️ {c.brand}
+                      </span>
+                    )}
                     {c.length && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>📏 {c.length}</span>}
                     {c.color && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🎨 {c.color}</span>}
                     {c.condition && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>✨ {c.condition}</span>}
@@ -2298,28 +3086,36 @@ export default function App() {
             {/* Typ-Auswahl des Ladegeräts */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Typ des Ladegeräts</label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <button 
                   type="button" 
                   onClick={() => setCabChargerType('only_ports')}
-                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem', background: cabChargerType === 'only_ports' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: cabChargerType === 'only_ports' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
                 >
-                  Nur Ports
+                  <USBAIcon size={18} />
+                  <span>Nur Ports</span>
                 </button>
                 <button 
                   type="button" 
                   onClick={() => setCabChargerType('only_fixed_cable')}
-                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem', background: cabChargerType === 'only_fixed_cable' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: cabChargerType === 'only_fixed_cable' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
                 >
-                  Festes Kabel
+                  <CableIcon size={18} />
+                  <span>Festes Kabel</span>
                 </button>
                 <button 
                   type="button" 
                   onClick={() => setCabChargerType('hybrid')}
-                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem', background: cabChargerType === 'hybrid' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: cabChargerType === 'hybrid' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
                 >
-                  Hybrid
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                    <USBAIcon size={16} />
+                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: 1 }}>+</span>
+                    <CableIcon size={16} />
+                  </div>
+                  <span>Hybrid</span>
                 </button>
+                <div />
               </div>
             </div>
 
@@ -2327,10 +3123,10 @@ export default function App() {
             {(cabChargerType === 'only_fixed_cable' || cabChargerType === 'hybrid') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Festes Kabel</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1.2fr 1fr 1fr', gap: '0.5rem' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Stecker-Typ</label>
-                    <select value={cabFixedConnector} onChange={e => setCabFixedConnector(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }}>
+                    <select value={cabFixedConnector} onChange={e => setCabFixedConnector(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }}>
                       <option value="USB-C">USB-C</option>
                       <option value="Micro-USB">Micro-USB</option>
                       <option value="Lightning">Lightning</option>
@@ -2340,11 +3136,17 @@ export default function App() {
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Länge</label>
-                    <input type="text" placeholder="1.5m" value={cabFixedLength} onChange={e => setCabFixedLength(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }} />
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input type="text" placeholder="z.B. 1.5" value={cabFixedLength} onChange={e => setCabFixedLength(e.target.value)} style={{ width: '100%', padding: '0.4rem 1.2rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }} />
+                      <span style={{ position: 'absolute', right: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>m</span>
+                    </div>
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Leistung</label>
-                    <input type="text" placeholder="65W" value={cabFixedPower} onChange={e => setCabFixedPower(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }} />
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input type="text" placeholder="z.B. 65" value={cabFixedPower} onChange={e => setCabFixedPower(e.target.value)} style={{ width: '100%', padding: '0.4rem 1.2rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }} />
+                      <span style={{ position: 'absolute', right: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>W</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2405,7 +3207,7 @@ export default function App() {
               if (!hasAnyActiveProps) return null;
 
               return (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
                   {activeStandardProps.map(prop => {
                     if (!expandedChargerProps[prop.id]) return null;
                     return (
@@ -2621,20 +3423,75 @@ export default function App() {
                 <div 
                   key={c.id} 
                   onClick={() => openCableDetails(c)}
-                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease' }}
+                  style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong>{c.name}</strong>
-                    <span style={{ fontSize: '0.8rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
-                      {c.chargerType === 'only_fixed_cable' ? '🪢 Kabel-Netzteil' : c.chargerType === 'hybrid' ? '🎛️ Hybrid-Lader' : '🔌 Port-Lader'}
-                    </span>
+                  {/* UPPER AREA: Image left, Name right */}
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      borderRadius: 'var(--radius-xs)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <img 
+                        src={c.images && c.images.length > 0 ? c.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                        alt="" 
+                        style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: c.images && c.images.length > 0 ? 'cover' : 'contain',
+                          opacity: c.images && c.images.length > 0 ? 1 : 0.4,
+                          padding: c.images && c.images.length > 0 ? 0 : '8px'
+                        }} 
+                      />
+                    </div>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{c.name}</strong>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                     Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
                   </div>
-                  <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+
+                  {/* Chips für Eigenschaften */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                    {/* Ladegerät-Typ als Eigenschaft */}
+                    <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                      🔌 {c.chargerType === 'only_fixed_cable' ? 'Kabel-Netzteil' : c.chargerType === 'hybrid' ? 'Hybrid-Lader' : 'Port-Lader'}
+                    </span>
+                    {/* Hersteller als Eigenschaft */}
+                    {c.brand && (
+                      <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                        🏷️ {c.brand}
+                      </span>
+                    )}
+                    {c.length && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>📏 {c.length}</span>}
+                    {c.color && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🎨 {c.color}</span>}
+                    {c.condition && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>✨ {c.condition}</span>}
+                    {c.material && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🧵 {c.material}</span>}
+                    {c.dataRate && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>⚡ {c.dataRate}</span>}
+                    {c.chargingPower && <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>🔌 {c.chargingPower}</span>}
+                    
+                    {c.additionalProperties && Object.entries(c.additionalProperties).map(([propId, val]) => {
+                      const propDef = customProperties.find(p => p.id === propId);
+                      const label = propDef ? propDef.label : propId;
+                      return val ? (
+                        <span key={propId} style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                          🏷️ {label}: {val}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+
+                  {/* Ports / Festes Kabel Detail-Info */}
+                  <div style={{ marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', borderTop: '1px dashed var(--border-glass)', paddingTop: '0.4rem' }}>
                     {/* Festes Kabel */}
                     {(c.chargerType === 'only_fixed_cable' || c.chargerType === 'hybrid' || c.fixedCableConnector) && (
                       <div style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-primary)' }}>
@@ -2963,18 +3820,66 @@ export default function App() {
                   <div 
                     key={d.id} 
                     onClick={() => openDeviceDetails(d)}
-                    style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease' }}
+                    style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'transform 0.15s ease', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
                     onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.005)'}
                     onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong>{d.name}</strong>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', background: 'var(--bg-tertiary)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
-                        {d.manufacturer ? `${d.manufacturer} | ` : ''}{d.requiredConnectorType}{d.requiredConnectorType2 ? `, ${d.requiredConnectorType2}` : ''}
-                      </span>
+                    {/* UPPER AREA: Image left, Name right */}
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      <div style={{ 
+                        width: '40px', 
+                        height: '40px', 
+                        borderRadius: 'var(--radius-xs)', 
+                        overflow: 'hidden', 
+                        border: '1px solid var(--border-glass)', 
+                        background: 'var(--bg-tertiary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <img 
+                          src={d.images && d.images.length > 0 ? d.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                          alt="" 
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: d.images && d.images.length > 0 ? 'cover' : 'contain',
+                            opacity: d.images && d.images.length > 0 ? 1 : 0.4,
+                            padding: d.images && d.images.length > 0 ? 0 : '8px'
+                          }} 
+                        />
+                      </div>
+                      <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{d.name}</strong>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>Ort: {d.locationId ? buildLocationPath(d.locationId, locations) : 'Kein Ort'}</span>
+
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      Ort: {d.locationId ? buildLocationPath(d.locationId, locations) : 'Kein Ort'}
+                    </div>
+
+                    {/* Chips für Eigenschaften */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                      {/* Anschluss/Port als Eigenschaft */}
+                      <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                        🔌 {d.requiredConnectorType}{d.requiredConnectorType2 ? `, ${d.requiredConnectorType2}` : ''}
+                      </span>
+                      {/* Hersteller als Eigenschaft */}
+                      {d.manufacturer && (
+                        <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                          🏷️ {d.manufacturer}
+                        </span>
+                      )}
+                      
+                      {/* Custom Properties */}
+                      {d.additionalProperties && Object.entries(d.additionalProperties).map(([propId, val]) => {
+                        const propDef = customProperties.find(p => p.id === propId);
+                        const label = propDef ? propDef.label : propId;
+                        return val ? (
+                          <span key={propId} style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                            🏷️ {label}: {val}
+                          </span>
+                        ) : null;
+                      })}
                     </div>
                   </div>
                 ))
@@ -3423,170 +4328,496 @@ export default function App() {
 
       {/* CABLE DETAILS MODAL */}
       {selectedCableDetails && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(8px)', padding: '1rem' }}>
-          <form onSubmit={handleSaveCableEdit} className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.5rem', width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem' }}>
-              <h3 style={{ margin: 0 }}>{editIsMulti ? 'Ladegerät bearbeiten' : 'Kabel bearbeiten'}</h3>
-              <button type="button" onClick={() => setSelectedCableDetails(null)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '3rem', cursor: 'pointer', lineHeight: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '30px', width: '30px' }}>&times;</button>
-            </div>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'var(--bg-primary)', zIndex: 1000, overflowY: 'auto' }}>
+          {!editIsEditing ? (
+            // READ-ONLY VIEW
+            <>
+              {/* Sub-page Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
+                <button type="button" onClick={() => setSelectedCableDetails(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
+                  <ArrowLeft size={24} />
+                </button>
+                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>{selectedCableDetails.isMultiOutput ? 'Ladegerät Details' : 'Kabel Details'}</h2>
+              </div>
 
-            {/* Editable Fields based on Type */}
-            {editIsMulti ? (
-              // Charger Fields
-              <>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Name</label>
-                  <input type="text" placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
-                </div>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Typ des Ladegeräts</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => setEditChargerType('only_ports')}
-                      style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem', background: editChargerType === 'only_ports' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      Nur Ports
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setEditChargerType('only_fixed_cable')}
-                      style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem', background: editChargerType === 'only_fixed_cable' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      Festes Kabel
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setEditChargerType('hybrid')}
-                      style={{ flex: 1, fontSize: '0.75rem', padding: '0.5rem', background: editChargerType === 'hybrid' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      Hybrid
-                    </button>
+              <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
+                {/* UPPER AREA: Image left, Name right */}
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <div 
+                    onClick={() => { if (editImages.length > 0) { setGalleryImages(editImages); setGalleryIndex(0); } }}
+                    style={{ 
+                      width: '100px', 
+                      height: '100px', 
+                      borderRadius: 'var(--radius-md)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: editImages.length > 0 ? 'pointer' : 'default',
+                      position: 'relative',
+                      flexShrink: 0
+                    }}
+                  >
+                    <img 
+                      src={editImages.length > 0 ? editImages[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                      alt="Vorschau" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: editImages.length > 0 ? 'cover' : 'contain', 
+                        opacity: editImages.length > 0 ? 1 : 0.5,
+                        padding: editImages.length > 0 ? 0 : '16px'
+                      }} 
+                    />
+                    {editImages.length > 1 && (
+                      <span style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px' }}>
+                        +{editImages.length - 1}
+                      </span>
+                    )}
                   </div>
-                </div>
-
-                {(editChargerType === 'only_fixed_cable' || editChargerType === 'hybrid') && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Festes Kabel</span>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Stecker-Typ</label>
-                        <select value={editFixedConnector} onChange={e => setEditFixedConnector(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }}>
-                          <option value="USB-C">USB-C</option>
-                          <option value="Micro-USB">Micro-USB</option>
-                          <option value="Lightning">Lightning</option>
-                          <option value="DC-Jack">DC-Jack</option>
-                          <option value="Other">Andere</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Länge</label>
-                        <input type="text" placeholder="1.5m" value={editFixedLength} onChange={e => setEditFixedLength(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }} />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Leistung</label>
-                        <input type="text" placeholder="65W" value={editFixedPower} onChange={e => setEditFixedPower(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)' }} />
-                      </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, wordBreak: 'break-word' }}>{selectedCableDetails.name}</h3>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                      📍 Lagerort: {selectedCableDetails.locationId ? buildLocationPath(selectedCableDetails.locationId, locations) : 'Kein Lagerort'}
                     </div>
                   </div>
-                )}
+                </div>
 
-                {(editChargerType === 'only_ports' || editChargerType === 'hybrid') && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Ports</span>
-                    {editPorts.map((p, idx) => (
-                      <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.4rem', alignItems: 'center' }}>
-                        <select value={p.portType} onChange={e => {
-                          const updated = [...editPorts];
-                          updated[idx].portType = e.target.value;
-                          setEditPorts(updated);
-                        }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }}>
-                          <option value="">-- Port-Typ --</option>
-                          <option value="USB-C">USB-C</option>
-                          <option value="USB-A">USB-A</option>
-                          <option value="DC-Jack">DC-Jack</option>
-                        </select>
-                        
-                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                          <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="Watt" value={p.wattage || ''} onChange={e => {
-                            const w = Number(e.target.value);
-                            const updated = [...editPorts];
-                            updated[idx].wattage = w;
-                            setEditPorts(updated);
-                          }} style={{ width: '100%', padding: '0.4rem 1.1rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }} />
-                          <span style={{ position: 'absolute', right: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>W</span>
-                        </div>
-
-                        {editPorts.length > 1 && (
-                          <button type="button" onClick={() => setEditPorts(editPorts.filter((_, i) => i !== idx))} style={{ background: 'none', color: 'var(--error)', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0.25rem' }}>&times;</button>
-                        )}
+                {/* Multiple Images List */}
+                {editImages.length > 1 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', padding: '0.25rem 0' }}>
+                    {editImages.map((img, idx) => (
+                      <div 
+                        key={img.id} 
+                        onClick={() => { setGalleryImages(editImages); setGalleryIndex(idx); }}
+                        style={{ width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}
+                      >
+                        <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       </div>
                     ))}
-                    <button type="button" onClick={() => setEditPorts([...editPorts, { voltage: 5, amperage: 0, wattage: 0, portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>+ Weiteren Port hinzufügen</button>
                   </div>
                 )}
-              </>
-            ) : (
-              // Cable Fields
-              <>
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Name</label>
-                  <input type="text" placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
+
+                {/* Properties list */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                  {!selectedCableDetails.isMultiOutput ? (
+                    // Cable details
+                    <>
+                      <div><span style={{ color: 'var(--text-secondary)' }}>Stecker-Typ 1:</span> <strong>{selectedCableDetails.connectorType1 || selectedCableDetails.connectorType || 'USB-C'}</strong></div>
+                      {selectedCableDetails.cableStandard1 && <div><span style={{ color: 'var(--text-secondary)' }}>Standard 1:</span> <strong>{selectedCableDetails.cableStandard1}</strong></div>}
+                      <div><span style={{ color: 'var(--text-secondary)' }}>Stecker-Typ 2:</span> <strong>{selectedCableDetails.connectorType2 || 'USB-C'}</strong></div>
+                      {selectedCableDetails.cableStandard2 && <div><span style={{ color: 'var(--text-secondary)' }}>Standard 2:</span> <strong>{selectedCableDetails.cableStandard2}</strong></div>}
+                      {selectedCableDetails.length && <div><span style={{ color: 'var(--text-secondary)' }}>Länge:</span> <strong>{selectedCableDetails.length}</strong></div>}
+                    </>
+                  ) : (
+                    // Charger details
+                    <>
+                      <div><span style={{ color: 'var(--text-secondary)' }}>Ladegerät-Typ:</span> <strong>{selectedCableDetails.chargerType === 'only_ports' ? 'Nur Ports' : selectedCableDetails.chargerType === 'only_fixed_cable' ? 'Festes Kabel' : 'Hybrid'}</strong></div>
+                      {(selectedCableDetails.chargerType === 'only_fixed_cable' || selectedCableDetails.chargerType === 'hybrid') && (
+                        <>
+                          <div><span style={{ color: 'var(--text-secondary)' }}>Festes Kabel Stecker:</span> <strong>{selectedCableDetails.fixedCableConnector}</strong></div>
+                          {selectedCableDetails.fixedCableLength && <div><span style={{ color: 'var(--text-secondary)' }}>Festes Kabel Länge:</span> <strong>{selectedCableDetails.fixedCableLength}</strong></div>}
+                          {selectedCableDetails.fixedCablePower && <div><span style={{ color: 'var(--text-secondary)' }}>Festes Kabel Leistung:</span> <strong>{selectedCableDetails.fixedCablePower}</strong></div>}
+                        </>
+                      )}
+                      {(selectedCableDetails.chargerType === 'only_ports' || selectedCableDetails.chargerType === 'hybrid') && selectedCableDetails.powerOutputs && selectedCableDetails.powerOutputs.length > 0 && (
+                        <div>
+                          <span style={{ color: 'var(--text-secondary)' }}>Ausgänge (Ports):</span>
+                          <div style={{ paddingLeft: '0.75rem', marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            {selectedCableDetails.powerOutputs.map((p, idx) => (
+                              <div key={idx} style={{ fontSize: '0.85rem' }}>
+                                Port {idx + 1}: <strong>{p.portType} ({p.wattage}W)</strong>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Standard details */}
+                  {selectedCableDetails.brand && <div><span style={{ color: 'var(--text-secondary)' }}>Marke:</span> <strong>{selectedCableDetails.brand}</strong></div>}
+                  {selectedCableDetails.color && <div><span style={{ color: 'var(--text-secondary)' }}>Farbe:</span> <strong>{selectedCableDetails.color}</strong></div>}
+                  {selectedCableDetails.condition && <div><span style={{ color: 'var(--text-secondary)' }}>Zustand:</span> <strong>{selectedCableDetails.condition}</strong></div>}
+                  {selectedCableDetails.material && <div><span style={{ color: 'var(--text-secondary)' }}>Material:</span> <strong>{selectedCableDetails.material}</strong></div>}
+                  {selectedCableDetails.dataRate && <div><span style={{ color: 'var(--text-secondary)' }}>Datenrate:</span> <strong>{selectedCableDetails.dataRate}</strong></div>}
+                  {selectedCableDetails.chargingPower && <div><span style={{ color: 'var(--text-secondary)' }}>Ladeleistung:</span> <strong>{selectedCableDetails.chargingPower}</strong></div>}
+                  
+                  {/* Custom properties */}
+                  {selectedCableDetails.additionalProperties && Object.entries(selectedCableDetails.additionalProperties).map(([k, v]) => {
+                    const propDef = customProperties.find(p => p.id === k);
+                    const label = propDef ? propDef.label : k;
+                    return v ? (
+                      <div key={k}><span style={{ color: 'var(--text-secondary)' }}>{label}:</span> <strong>{v}</strong></div>
+                    ) : null;
+                  })}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 1</label>
-                    <select value={editConnectorType1} onChange={e => handleSelectChange('Stecker-Typ 1', e.target.value, connectors, setConnectors, 'list_connectors', setEditConnectorType1)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 1)</label>
-                    <select value={editCableStandard1} onChange={e => handleCableStandardSelect(1, e.target.value, true)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      <option value="">-- Keine Angabe --</option>
-                      {(cableStandardGroups[getConnectorFamily(editConnectorType1)] || []).map(u => (
-                        <option key={u} value={u}>{u}</option>
-                      ))}
-                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 2</label>
-                    <select value={editConnectorType2} onChange={e => handleSelectChange('Stecker-Typ 2', e.target.value, connectors, setConnectors, 'list_connectors', setEditConnectorType2)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 2)</label>
-                    <select value={editCableStandard2} onChange={e => handleCableStandardSelect(2, e.target.value, true)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      <option value="">-- Keine Angabe --</option>
-                      {(cableStandardGroups[getConnectorFamily(editConnectorType2)] || []).map(u => (
-                        <option key={u} value={u}>{u}</option>
-                      ))}
-                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                    </select>
+                {/* Verknüpfte Komponenten list */}
+                <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                  <strong style={{ fontSize: '0.9rem', display: 'block', marginBottom: '0.5rem' }}>Verknüpfte Komponenten:</strong>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {(selectedCableDetails.assignedDeviceIds || []).map(devId => {
+                      const dev = devices.find(d => d.id === devId);
+                      if (!dev) return null;
+                      return (
+                        <div key={devId} style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
+                          <span>📱 {dev.name} (Gerät)</span>
+                        </div>
+                      );
+                    })}
+                    {(selectedCableDetails.assignedCableIds || []).map(cabId => {
+                      const cab = cables.find(c => c.id === cabId);
+                      if (!cab) return null;
+                      const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
+                      return (
+                        <div key={cabId} style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
+                          <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? 'Ladegerät' : 'Kabel'})</span>
+                        </div>
+                      );
+                    })}
+                    {(!selectedCableDetails.assignedDeviceIds || selectedCableDetails.assignedDeviceIds.length === 0) &&
+                     (!selectedCableDetails.assignedCableIds || selectedCableDetails.assignedCableIds.length === 0) && (
+                       <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Keine Verknüpfungen vorhanden.</span>
+                     )}
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kabellänge</label>
-                    <select value={editLength} onChange={e => handleSelectChange('Kabellänge', e.target.value, lengths, setLengths, 'list_lengths', setEditLength)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      <option value="">-- Keine Angabe --</option>
-                      {lengths.map(l => <option key={l} value={l}>{l}</option>)}
-                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                    </select>
+                {/* READ-ONLY CTA BUTTONS: 2-column grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                  <button type="button" onClick={() => setEditIsEditing(true)} className="btn-primary" style={{ padding: '0.6rem' }}>Bearbeiten</button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      handleDeleteCable(selectedCableDetails.id);
+                      setSelectedCableDetails(null);
+                    }} 
+                    className="btn-primary" 
+                    style={{ background: 'var(--error)', padding: '0.6rem' }}
+                  >
+                    Löschen
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      handleDuplicateCable(selectedCableDetails);
+                      setSelectedCableDetails(null);
+                    }} 
+                    className="btn-primary" 
+                    style={{ background: 'var(--success)', padding: '0.6rem' }}
+                  >
+                    Duplizieren
+                  </button>
+                  <button type="button" onClick={() => setSelectedCableDetails(null)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>Abbrechen</button>
+                </div>
+              </div>
+            </>
+          ) : (
+            // EDIT VIEW
+            <>
+              {/* Sub-page Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
+                <button type="button" onClick={() => setEditIsEditing(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
+                  <ArrowLeft size={24} />
+                </button>
+                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>{editIsMulti ? 'Ladegerät bearbeiten' : 'Kabel bearbeiten'}</h2>
+              </div>
+
+              <form onSubmit={handleSaveCableEdit} style={{ background: 'var(--bg-primary)', border: 'none', borderRadius: 0, padding: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
+                
+                {/* UPPER AREA: Image left, Name input right */}
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <div 
+                    onClick={() => { if (editImages.length > 0) { setGalleryImages(editImages); setGalleryIndex(0); } }}
+                    style={{ 
+                      width: '100px', 
+                      height: '100px', 
+                      borderRadius: 'var(--radius-md)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: editImages.length > 0 ? 'pointer' : 'default',
+                      position: 'relative',
+                      flexShrink: 0
+                    }}
+                  >
+                    <img 
+                      src={editImages.length > 0 ? editImages[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                      alt="Vorschau" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: editImages.length > 0 ? 'cover' : 'contain', 
+                        opacity: editImages.length > 0 ? 1 : 0.5,
+                        padding: editImages.length > 0 ? 0 : '16px'
+                      }} 
+                    />
+                    {editImages.length > 1 && (
+                      <span style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px' }}>
+                        +{editImages.length - 1}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Name</label>
+                    <input type="text" placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }} required />
                   </div>
                 </div>
 
-                {/* Collapsed Props */}
+                {/* MIDDLE AREA: Location and Photos collapsible */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => setEditShowLoc(!editShowLoc)} 
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                    >
+                      📍 {editLocation ? `Lagerort: ${locations.find(l => l.id === editLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+                    </button>
+                    {editShowLoc && (
+                      <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                        {renderLocationTreeSelector(editLocParentId, setEditLocParentId, editLocation, setEditLocation, 'Lagerort')}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => setEditShowPhotos(!editShowPhotos)} 
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                    >
+                      📷 {editImages.length > 0 ? `Fotos (${editImages.length})` : '+ Foto'}
+                    </button>
+                    {editShowPhotos && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                          <div>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
+                              <input 
+                                type="text" 
+                                placeholder="Beschreibung (optional)" 
+                                value={tempEditImageLabel || ''} 
+                                onChange={e => setTempEditImageLabel(e.target.value)} 
+                                style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
+                              />
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageAttachmentUploadEdit('cable', file, tempEditImageLabel || '');
+                                }} style={{ display: 'none' }} id="edit-cab-cam-upload" />
+                                <label htmlFor="edit-cab-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
+                                  📷 Kamera
+                                </label>
+
+                                <input type="file" accept="image/*" onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageAttachmentUploadEdit('cable', file, tempEditImageLabel || '');
+                                }} style={{ display: 'none' }} id="edit-cab-gal-upload" />
+                                <label htmlFor="edit-cab-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
+                                  🖼️ Galerie
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Previews in Edit Modal */}
+                        {editImages.length > 0 && (
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                            {editImages.map((img, idx) => (
+                              <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
+                                <img src={img.url} alt={img.label} onClick={() => { setGalleryImages(editImages); setGalleryIndex(idx); }} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} />
+                                <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
+                                  {img.label}
+                                </span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => setEditImages(prev => prev.filter(i => i.id !== img.id))} 
+                                  style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                                >
+                                  &times;
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* LOWER AREA: All properties */}
+                {editIsMulti ? (
+                  // Charger Fields
+                  <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Typ des Ladegeräts</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <button 
+                          type="button" 
+                          onClick={() => setEditChargerType('only_ports')}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: editChargerType === 'only_ports' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
+                        >
+                          <USBAIcon size={18} />
+                          <span>Nur Ports</span>
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setEditChargerType('only_fixed_cable')}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: editChargerType === 'only_fixed_cable' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
+                        >
+                          <CableIcon size={18} />
+                          <span>Festes Kabel</span>
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setEditChargerType('hybrid')}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: editChargerType === 'hybrid' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                            <USBAIcon size={16} />
+                            <span style={{ fontSize: '0.9rem', fontWeight: 'bold', lineHeight: 1 }}>+</span>
+                            <CableIcon size={16} />
+                          </div>
+                          <span>Hybrid</span>
+                        </button>
+                        <div />
+                      </div>
+                    </div>
+
+                    {(editChargerType === 'only_fixed_cable' || editChargerType === 'hybrid') && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Festes Kabel</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1.2fr 1fr 1fr', gap: '0.5rem' }}>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Stecker-Typ</label>
+                            <select value={editFixedConnector} onChange={e => setEditFixedConnector(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }}>
+                              <option value="USB-C">USB-C</option>
+                              <option value="Micro-USB">Micro-USB</option>
+                              <option value="Lightning">Lightning</option>
+                              <option value="DC-Jack">DC-Jack</option>
+                              <option value="Other">Andere</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Länge</label>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <input type="text" placeholder="z.B. 1.5" value={editFixedLength} onChange={e => setEditFixedLength(e.target.value)} style={{ width: '100%', padding: '0.4rem 1.2rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }} />
+                              <span style={{ position: 'absolute', right: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>m</span>
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Leistung</label>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <input type="text" placeholder="z.B. 65" value={editFixedPower} onChange={e => setEditFixedPower(e.target.value)} style={{ width: '100%', padding: '0.4rem 1.2rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }} />
+                              <span style={{ position: 'absolute', right: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>W</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {(editChargerType === 'only_ports' || editChargerType === 'hybrid') && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Ports</span>
+                        {editPorts.map((p, idx) => (
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.4rem', alignItems: 'center' }}>
+                            <select value={p.portType} onChange={e => {
+                              const updated = [...editPorts];
+                              updated[idx].portType = e.target.value;
+                              setEditPorts(updated);
+                            }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }}>
+                              <option value="">-- Port-Typ --</option>
+                              <option value="USB-C">USB-C</option>
+                              <option value="USB-A">USB-A</option>
+                              <option value="DC-Jack">DC-Jack</option>
+                            </select>
+                            
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                              <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="Watt" value={p.wattage || ''} onChange={e => {
+                                const w = Number(e.target.value);
+                                const updated = [...editPorts];
+                                updated[idx].wattage = w;
+                                setEditPorts(updated);
+                              }} style={{ width: '100%', padding: '0.4rem 1.1rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }} />
+                              <span style={{ position: 'absolute', right: '6px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>W</span>
+                            </div>
+
+                            {editPorts.length > 1 && (
+                              <button type="button" onClick={() => setEditPorts(editPorts.filter((_, i) => i !== idx))} style={{ background: 'none', color: 'var(--error)', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0.25rem' }}>&times;</button>
+                            )}
+                          </div>
+                        ))}
+                        <button type="button" onClick={() => setEditPorts([...editPorts, { voltage: 5, amperage: 0, wattage: 0, portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>+ Weiteren Port hinzufügen</button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  // Cable Fields
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 1</label>
+                        <select value={editConnectorType1} onChange={e => handleSelectChange('Stecker-Typ 1', e.target.value, connectors, setConnectors, 'list_connectors', setEditConnectorType1)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                          {connectors.map(c => <option key={c} value={c}>{c}</option>)}
+                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 1)</label>
+                        <select value={editCableStandard1} onChange={e => handleCableStandardSelect(1, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                          <option value="">-- Keine Angabe --</option>
+                          {(cableStandardGroups[getConnectorFamily(editConnectorType1)] || []).map(u => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 2</label>
+                        <select value={editConnectorType2} onChange={e => handleSelectChange('Stecker-Typ 2', e.target.value, connectors, setConnectors, 'list_connectors', setEditConnectorType2)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                          {connectors.map(c => <option key={c} value={c}>{c}</option>)}
+                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 2)</label>
+                        <select value={editCableStandard2} onChange={e => handleCableStandardSelect(2, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                          <option value="">-- Keine Angabe --</option>
+                          {(cableStandardGroups[getConnectorFamily(editConnectorType2)] || []).map(u => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kabellänge</label>
+                        <select value={editLength} onChange={e => handleSelectChange('Kabellänge', e.target.value, lengths, setLengths, 'list_lengths', setEditLength)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                          <option value="">-- Keine Angabe --</option>
+                          {lengths.map(l => <option key={l} value={l}>{l}</option>)}
+                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        </select>
+                      </div>
+                      <div />
+                    </div>
+                  </>
+                )}
+
+                {/* Collapsed/Active properties (Creation Form style) */}
                 {(() => {
                   const compType = editIsMulti ? 'charger' : 'cable';
                   const hasAnyActiveProps = (
@@ -3602,7 +4833,7 @@ export default function App() {
                   if (!hasAnyActiveProps) return null;
 
                   return (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
                       {propertyAssignments.brand?.includes(compType) && editExpandedProps.brand && (
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Marke</label>
@@ -3721,8 +4952,6 @@ export default function App() {
                     </div>
                   );
                 })()}
-              </>
-            )}
 
             {/* Collapsible Trigger Buttons */}
             <div style={{ display: 'flex', gap: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', flexWrap: 'wrap' }}>
@@ -3768,87 +4997,7 @@ export default function App() {
                   </>
                 );
               })()}
-              <button 
-                type="button" 
-                onClick={() => setEditShowLoc(!editShowLoc)} 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
-              >
-                {editLocation ? `Lagerort: ${locations.find(l => l.id === editLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setEditShowPhotos(!editShowPhotos)} 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
-              >
-                {editImages.length > 0 ? `Fotos (${editImages.length})` : '+ Foto'}
-              </button>
             </div>
-
-            {/* Hierarchische Lagerort-Auswahl */}
-            {editShowLoc && (
-              <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                {renderLocationTreeSelector(editLocParentId, setEditLocParentId, editLocation, setEditLocation, 'Lagerort')}
-              </div>
-            )}
-
-            {/* Fotos bearbeiten */}
-            {editShowPhotos && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Beschreibung (optional)" 
-                        value={tempEditImageLabel || ''} 
-                        onChange={e => setTempEditImageLabel(e.target.value)} 
-                        style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
-                      />
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageAttachmentUploadEdit('cable', file, tempEditImageLabel || '');
-                        }} style={{ display: 'none' }} id="edit-cab-cam-upload" />
-                        <label htmlFor="edit-cab-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
-                          📷 Kamera
-                        </label>
-
-                        <input type="file" accept="image/*" onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageAttachmentUploadEdit('cable', file, tempEditImageLabel || '');
-                        }} style={{ display: 'none' }} id="edit-cab-gal-upload" />
-                        <label htmlFor="edit-cab-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
-                          🖼️ Galerie
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Previews in Edit Modal */}
-                {editImages.length > 0 && (
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
-                    {editImages.map(img => (
-                      <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
-                        <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
-                          {img.label}
-                        </span>
-                        <button 
-                          type="button" 
-                          onClick={() => setEditImages(prev => prev.filter(i => i.id !== img.id))} 
-                          style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                        >
-                          &times;
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
-              </div>
-            )}
 
             {/* Verknüpfte Komponenten verwalten */}
             <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
@@ -3907,415 +5056,645 @@ export default function App() {
               </div>
             </div>
 
-            {/* Vertically Stacked Actions */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-              <button type="submit" className="btn-primary" style={{ width: '100%' }}>Speichern</button>
-              <button 
-                type="button"
-                onClick={() => {
-                  setReassigningCableId(selectedCableDetails.id);
-                  setSelectedCableDetails(null);
-                  setActiveTab('scan');
-                  startCamera();
-                }} 
-                className="btn-primary" 
-                style={{ width: '100%', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}
-              >
-                <RefreshCw size={14} /> Sticker ersetzen
-              </button>
-              <button 
-                type="button"
-                onClick={() => {
-                  handleDuplicateCable(selectedCableDetails);
-                  setSelectedCableDetails(null);
-                }} 
-                className="btn-primary" 
-                style={{ width: '100%', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', background: 'var(--success)' }}
-              >
-                <Copy size={14} /> Duplizieren
-              </button>
-              <button 
-                type="button"
-                onClick={() => {
-                  handleDeleteCable(selectedCableDetails.id);
-                  setSelectedCableDetails(null);
-                }} 
-                className="btn-primary" 
-                style={{ width: '100%', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', background: 'var(--error)' }}
-              >
-                <Trash2 size={14} /> Löschen
-              </button>
-              <button type="button" onClick={() => setSelectedCableDetails(null)} style={{ width: '100%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.85rem' }}>Abbrechen</button>
+            {/* CTA Buttons in Edit view: Speichern and Abbrechen */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+              <button type="submit" className="btn-primary" style={{ padding: '0.6rem' }}>Speichern</button>
+              <button type="button" onClick={() => setEditIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>Abbrechen</button>
             </div>
           </form>
-        </div>
+        </>
       )}
+    </div>
+  )}
 
       {/* DEVICE DETAILS MODAL */}
       {selectedDeviceDetails && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(8px)', padding: '1rem' }}>
-          <form onSubmit={handleSaveDeviceEdit} className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.5rem', width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem' }}>
-              <h3 style={{ margin: 0 }}>Gerät bearbeiten</h3>
-              <button type="button" onClick={() => setSelectedDeviceDetails(null)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '3rem', cursor: 'pointer', lineHeight: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '30px', width: '30px' }}>&times;</button>
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Name</label>
-              <input type="text" placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Port</label>
-                <select value={editDevConnector} onChange={e => setEditDevConnector(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'var(--bg-primary)', zIndex: 1000, overflowY: 'auto' }}>
+          {!editDevIsEditing ? (
+            // READ-ONLY VIEW
+            <>
+              {/* Sub-page Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
+                <button type="button" onClick={() => setSelectedDeviceDetails(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
+                  <ArrowLeft size={24} />
+                </button>
+                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>Gerät Details</h2>
               </div>
 
-              {editDevShowPort2 && (
-                <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Port 2</label>
-                  <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                    <select value={editDevConnector2} onChange={e => setEditDevConnector2(e.target.value)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      <option value="">-- Keine Angabe --</option>
-                      {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                    <button type="button" onClick={() => { setEditDevShowPort2(false); setEditDevConnector2(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
+              <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
+                {/* UPPER AREA: Image left, Name right */}
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <div 
+                    onClick={() => { if (editDevImages.length > 0) { setGalleryImages(editDevImages); setGalleryIndex(0); } }}
+                    style={{ 
+                      width: '100px', 
+                      height: '100px', 
+                      borderRadius: 'var(--radius-md)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: editDevImages.length > 0 ? 'pointer' : 'default',
+                      position: 'relative',
+                      flexShrink: 0
+                    }}
+                  >
+                    <img 
+                      src={editDevImages.length > 0 ? editDevImages[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                      alt="Vorschau" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: editDevImages.length > 0 ? 'cover' : 'contain', 
+                        opacity: editDevImages.length > 0 ? 1 : 0.5,
+                        padding: editDevImages.length > 0 ? 0 : '16px'
+                      }} 
+                    />
+                    {editDevImages.length > 1 && (
+                      <span style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px' }}>
+                        +{editDevImages.length - 1}
+                      </span>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Dynamische Eigenschaften basierend auf Zuordnung für Geräte */}
-            {(() => {
-              const assignedPropsList = [
-                { id: 'brand', label: 'Hersteller', list: brands, setList: setBrands, key: 'list_brands', val: editDevManufacturer, setVal: setEditDevManufacturer },
-                { id: 'length', label: 'Kabellänge', list: lengths, setList: setLengths, key: 'list_lengths', val: '', setVal: () => {} },
-                { id: 'color', label: 'Farbe', list: colors, setList: setColors, key: 'list_colors', val: editCustomPropValues['color'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, color: v })) },
-                { id: 'condition', label: 'Zustand', list: conditions, setList: setConditions, key: 'list_conditions', val: editCustomPropValues['condition'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, condition: v })) },
-                { id: 'material', label: 'Material', list: materials, setList: setMaterials, key: 'list_materials', val: editCustomPropValues['material'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, material: v })) },
-                { id: 'dataRate', label: 'Datenrate', list: dataRates, setList: setDataRates, key: 'list_data_rates', val: editCustomPropValues['dataRate'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, dataRate: v })) },
-                { id: 'chargingPower', label: 'Leistung', list: chargingPowers, setList: setChargingPowers, key: 'list_charging_powers', val: editCustomPropValues['chargingPower'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, chargingPower: v })) },
-              ];
-
-              const activeStandardProps = assignedPropsList.filter(p => propertyAssignments[p.id]?.includes('device') && p.id !== 'brand');
-              const activeCustomProps = customProperties.filter(p => propertyAssignments[p.id]?.includes('device'));
-
-              const hasAnyActiveProps = (propertyAssignments['brand']?.includes('device') && editExpandedProps.brand) || activeStandardProps.some(p => editExpandedProps[p.id]) || activeCustomProps.some(p => editExpandedProps[p.id]);
-              if (!hasAnyActiveProps) return null;
-
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-                  {/* Brand / Hersteller */}
-                  {propertyAssignments['brand']?.includes('device') && editExpandedProps.brand && (
-                    <div>
-                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Hersteller</label>
-                      <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                        <select value={editDevManufacturer} onChange={e => handleSelectChange('Hersteller', e.target.value, brands, setBrands, 'list_brands', setEditDevManufacturer)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                          <option value="">-- Keine Angabe --</option>
-                          {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                        </select>
-                        <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, brand: false })); setEditDevManufacturer(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Standard active props (color, material etc.) */}
-                  {activeStandardProps.map(prop => {
-                    if (!editExpandedProps[prop.id]) return null;
-                    return (
-                      <div key={prop.id}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
-                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                          <select value={prop.val} onChange={e => handleSelectChange(prop.label, e.target.value, prop.list, prop.setList, prop.key, prop.setVal)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                            <option value="">-- Keine Angabe --</option>
-                            {prop.list.map(x => <option key={x} value={x}>{x}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                          </select>
-                          <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, [prop.id]: false })); prop.setVal(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Custom active props */}
-                  {activeCustomProps.map(prop => {
-                    if (!editExpandedProps[prop.id]) return null;
-                    return (
-                      <div key={prop.id}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
-                        <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                          <select
-                            value={editCustomPropValues[prop.id] || ''}
-                            onChange={e => handleSelectChange(
-                              prop.label,
-                              e.target.value,
-                              prop.values,
-                              (updatedValuesAction) => {
-                                const updatedProps = customProperties.map(p => {
-                                  if (p.id === prop.id) {
-                                    const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
-                                    return { ...p, values: newValues };
-                                  }
-                                  return p;
-                                });
-                                setCustomProperties(updatedProps);
-                                localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
-                              },
-                              `list_custom_prop_${prop.id}`,
-                              (val) => setEditCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
-                            )}
-                            style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-                          >
-                            <option value="">-- Keine Angabe --</option>
-                            {prop.values.map(v => <option key={v} value={v}>{v}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                          </select>
-                          <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, [prop.id]: false })); setEditCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-
-            {/* Collapsible Buttons */}
-            <div style={{ display: 'flex', gap: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', flexWrap: 'wrap' }}>
-              {!editDevShowPort2 && (
-                <button type="button" onClick={() => setEditDevShowPort2(true)} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Port
-                </button>
-              )}
-              {propertyAssignments.brand?.includes('device') && !editExpandedProps.brand && (
-                <button type="button" onClick={() => setEditExpandedProps(p => ({ ...p, brand: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Hersteller
-                </button>
-              )}
-              {[
-                { id: 'length', label: 'Kabellänge' },
-                { id: 'color', label: 'Farbe' },
-                { id: 'condition', label: 'Zustand' },
-                { id: 'material', label: 'Material' },
-                { id: 'dataRate', label: 'Datenrate' },
-                { id: 'chargingPower', label: 'Leistung' },
-              ].filter(prop => propertyAssignments[prop.id]?.includes('device') && !editExpandedProps[prop.id]).map(prop => (
-                <button key={prop.id} type="button" onClick={() => setEditExpandedProps(p => ({ ...p, [prop.id]: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + {prop.label}
-                </button>
-              ))}
-              {customProperties.filter(prop => propertyAssignments[prop.id]?.includes('device') && !editExpandedProps[prop.id]).map(prop => (
-                <button key={prop.id} type="button" onClick={() => setEditExpandedProps(p => ({ ...p, [prop.id]: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + {prop.label}
-                </button>
-              ))}
-              <button 
-                type="button" 
-                onClick={() => setEditShowLoc(!editShowLoc)} 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
-              >
-                {editDevLocation ? `Lagerort: ${locations.find(l => l.id === editDevLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setEditShowPhotos(!editShowPhotos)} 
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
-              >
-                {editDevImages.length > 0 ? `Fotos (${editDevImages.length})` : '+ Foto'}
-              </button>
-            </div>
-
-            {/* Location Selector */}
-            {editShowLoc && (
-              <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                {renderLocationTreeSelector(editLocParentId, setEditLocParentId, editDevLocation, setEditDevLocation, 'Lagerort')}
-              </div>
-            )}
-
-            {/* Photos */}
-            {editShowPhotos && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Beschreibung (optional)" 
-                        value={tempEditDevImageLabel || ''} 
-                        onChange={e => setTempEditDevImageLabel(e.target.value)} 
-                        style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
-                      />
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageAttachmentUploadEdit('device', file, tempEditDevImageLabel || '');
-                        }} style={{ display: 'none' }} id="edit-dev-cam-upload" />
-                        <label htmlFor="edit-dev-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
-                          📷 Kamera
-                        </label>
-
-                        <input type="file" accept="image/*" onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageAttachmentUploadEdit('device', file, tempEditDevImageLabel || '');
-                        }} style={{ display: 'none' }} id="edit-dev-gal-upload" />
-                        <label htmlFor="edit-dev-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
-                          🖼️ Galerie
-                        </label>
-                      </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, wordBreak: 'break-word' }}>{selectedDeviceDetails.name}</h3>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                      📍 Lagerort: {selectedDeviceDetails.locationId ? buildLocationPath(selectedDeviceDetails.locationId, locations) : 'Kein Lagerort'}
                     </div>
                   </div>
                 </div>
 
-                {/* Previews */}
-                {editDevImages.length > 0 && (
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
-                    {editDevImages.map(img => (
-                      <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
+                {/* Multiple Images List */}
+                {editDevImages.length > 1 && (
+                  <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', padding: '0.25rem 0' }}>
+                    {editDevImages.map((img, idx) => (
+                      <div 
+                        key={img.id} 
+                        onClick={() => { setGalleryImages(editDevImages); setGalleryIndex(idx); }}
+                        style={{ width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden', flexShrink: 0, cursor: 'pointer' }}
+                      >
                         <img src={img.url} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
-                          {img.label}
-                        </span>
-                        <button 
-                          type="button" 
-                          onClick={() => setEditDevImages(prev => prev.filter(i => i.id !== img.id))} 
-                          style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
-                        >
-                          &times;
-                        </button>
                       </div>
                     ))}
                   </div>
                 )}
-                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
-              </div>
-            )}
 
-            {/* Verknüpfte Komponenten */}
-            <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <strong style={{ fontSize: '0.9rem' }}>Verknüpfte Komponenten:</strong>
-                <button 
-                  type="button"
-                  onClick={() => setLinkingSource({ id: selectedDeviceDetails.id, type: 'device', name: selectedDeviceDetails.name })}
-                  className="btn-primary" 
-                  style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
-                >
-                  Verknüpfen
+                {/* Properties list */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                  <div><span style={{ color: 'var(--text-secondary)' }}>Port:</span> <strong>{selectedDeviceDetails.requiredConnectorType}</strong></div>
+                  {selectedDeviceDetails.requiredConnectorType2 && <div><span style={{ color: 'var(--text-secondary)' }}>Port 2:</span> <strong>{selectedDeviceDetails.requiredConnectorType2}</strong></div>}
+                  {selectedDeviceDetails.manufacturer && <div><span style={{ color: 'var(--text-secondary)' }}>Hersteller:</span> <strong>{selectedDeviceDetails.manufacturer}</strong></div>}
+                  
+                  {/* Custom properties */}
+                  {selectedDeviceDetails.additionalProperties && Object.entries(selectedDeviceDetails.additionalProperties).map(([k, v]) => {
+                    const propDef = customProperties.find(p => p.id === k);
+                    const label = propDef ? propDef.label : k;
+                    return v ? (
+                      <div key={k}><span style={{ color: 'var(--text-secondary)' }}>{label}:</span> <strong>{v}</strong></div>
+                    ) : null;
+                  })}
+                </div>
+
+                {/* Verknüpfte Komponenten list */}
+                <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                  <strong style={{ fontSize: '0.9rem', display: 'block', marginBottom: '0.5rem' }}>Verknüpfte Komponenten:</strong>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {(selectedDeviceDetails.compatibleCableIds || []).map(cabId => {
+                      const cab = cables.find(c => c.id === cabId);
+                      if (!cab) return null;
+                      const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
+                      return (
+                        <div key={cabId} style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
+                          <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? 'Ladegerät' : 'Kabel'})</span>
+                        </div>
+                      );
+                    })}
+                    {(!selectedDeviceDetails.compatibleCableIds || selectedDeviceDetails.compatibleCableIds.length === 0) && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Keine Verknüpfungen vorhanden.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* READ-ONLY CTA BUTTONS: 2-column grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                  <button type="button" onClick={() => setEditDevIsEditing(true)} className="btn-primary" style={{ padding: '0.6rem' }}>Bearbeiten</button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      handleDeleteDevice(selectedDeviceDetails.id);
+                      setSelectedDeviceDetails(null);
+                    }} 
+                    className="btn-primary" 
+                    style={{ background: 'var(--error)', padding: '0.6rem' }}
+                  >
+                    Löschen
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      handleDuplicateDevice(selectedDeviceDetails);
+                      setSelectedDeviceDetails(null);
+                    }} 
+                    className="btn-primary" 
+                    style={{ background: 'var(--success)', padding: '0.6rem' }}
+                  >
+                    Duplizieren
+                  </button>
+                  <button type="button" onClick={() => setSelectedDeviceDetails(null)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>Abbrechen</button>
+                </div>
+              </div>
+            </>
+          ) : (
+            // EDIT VIEW
+            <>
+              {/* Sub-page Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
+                <button type="button" onClick={() => setEditDevIsEditing(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
+                  <ArrowLeft size={24} />
                 </button>
+                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>Gerät bearbeiten</h2>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                {(selectedDeviceDetails.compatibleCableIds || []).map(cabId => {
-                  const cab = cables.find(c => c.id === cabId);
-                  if (!cab) return null;
-                  const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
+              <form onSubmit={handleSaveDeviceEdit} style={{ background: 'var(--bg-primary)', border: 'none', borderRadius: 0, padding: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
+                
+                {/* UPPER AREA: Image left, Name input right */}
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <div 
+                    onClick={() => { if (editDevImages.length > 0) { setGalleryImages(editDevImages); setGalleryIndex(0); } }}
+                    style={{ 
+                      width: '100px', 
+                      height: '100px', 
+                      borderRadius: 'var(--radius-md)', 
+                      overflow: 'hidden', 
+                      border: '1px solid var(--border-glass)', 
+                      background: 'var(--bg-tertiary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: editDevImages.length > 0 ? 'pointer' : 'default',
+                      position: 'relative',
+                      flexShrink: 0
+                    }}
+                  >
+                    <img 
+                      src={editDevImages.length > 0 ? editDevImages[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                      alt="Vorschau" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: editDevImages.length > 0 ? 'cover' : 'contain', 
+                        opacity: editDevImages.length > 0 ? 1 : 0.5,
+                        padding: editDevImages.length > 0 ? 0 : '16px'
+                      }} 
+                    />
+                    {editDevImages.length > 1 && (
+                      <span style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '0.65rem', padding: '1px 4px', borderRadius: '4px' }}>
+                        +{editDevImages.length - 1}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Name</label>
+                    <input type="text" placeholder="Name" value={editName} onChange={e => setEditName(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 600 }} required />
+                  </div>
+                </div>
+
+                {/* MIDDLE AREA: Location and Photos collapsible */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => setEditShowLoc(!editShowLoc)} 
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                    >
+                      📍 {editDevLocation ? `Lagerort: ${locations.find(l => l.id === editDevLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+                    </button>
+                    {editShowLoc && (
+                      <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                        {renderLocationTreeSelector(editLocParentId, setEditLocParentId, editDevLocation, setEditDevLocation, 'Lagerort')}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => setEditShowPhotos(!editShowPhotos)} 
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                    >
+                      📷 {editDevImages.length > 0 ? `Fotos (${editDevImages.length})` : '+ Foto'}
+                    </button>
+                    {editShowPhotos && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                          <div>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
+                              <input 
+                                type="text" 
+                                placeholder="Beschreibung (optional)" 
+                                value={tempEditDevImageLabel || ''} 
+                                onChange={e => setTempEditDevImageLabel(e.target.value)} 
+                                style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
+                              />
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <input type="file" accept="image/*" capture={isMobile ? "environment" : undefined} onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageAttachmentUploadEdit('device', file, tempEditDevImageLabel || '');
+                                }} style={{ display: 'none' }} id="edit-dev-cam-upload" />
+                                <label htmlFor="edit-dev-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
+                                  📷 Kamera
+                                </label>
+
+                                <input type="file" accept="image/*" onChange={e => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleImageAttachmentUploadEdit('device', file, tempEditDevImageLabel || '');
+                                }} style={{ display: 'none' }} id="edit-dev-gal-upload" />
+                                <label htmlFor="edit-dev-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
+                                  🖼️ Galerie
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Previews */}
+                        {editDevImages.length > 0 && (
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
+                            {editDevImages.map((img, idx) => (
+                              <div key={img.id} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '4px', border: '1px solid var(--border-glass)', overflow: 'hidden' }}>
+                                <img src={img.url} alt={img.label} onClick={() => { setGalleryImages(editDevImages); setGalleryIndex(idx); }} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} />
+                                <span style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.55rem', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', padding: '1px' }}>
+                                  {img.label}
+                                </span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => setEditDevImages(prev => prev.filter(i => i.id !== img.id))} 
+                                  style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(255,0,0,0.8)', border: 'none', color: 'white', fontSize: '0.7rem', width: '16px', height: '16px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                                >
+                                  &times;
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* LOWER AREA: All properties */}
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Port</label>
+                    <select value={editDevConnector} onChange={e => setEditDevConnector(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                      {connectors.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+
+                  {editDevShowPort2 && (
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Port 2</label>
+                      <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                        <select value={editDevConnector2} onChange={e => setEditDevConnector2(e.target.value)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                          <option value="">-- Keine Angabe --</option>
+                          {connectors.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <button type="button" onClick={() => { setEditDevShowPort2(false); setEditDevConnector2(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Dynamische Eigenschaften basierend auf Zuordnung für Geräte */}
+                {(() => {
+                  const assignedPropsList = [
+                    { id: 'brand', label: 'Hersteller', list: brands, setList: setBrands, key: 'list_brands', val: editDevManufacturer, setVal: setEditDevManufacturer },
+                    { id: 'length', label: 'Kabellänge', list: lengths, setList: setLengths, key: 'list_lengths', val: '', setVal: () => {} },
+                    { id: 'color', label: 'Farbe', list: colors, setList: setColors, key: 'list_colors', val: editCustomPropValues['color'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, color: v })) },
+                    { id: 'condition', label: 'Zustand', list: conditions, setList: setConditions, key: 'list_conditions', val: editCustomPropValues['condition'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, condition: v })) },
+                    { id: 'material', label: 'Material', list: materials, setList: setMaterials, key: 'list_materials', val: editCustomPropValues['material'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, material: v })) },
+                    { id: 'dataRate', label: 'Datenrate', list: dataRates, setList: setDataRates, key: 'list_data_rates', val: editCustomPropValues['dataRate'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, dataRate: v })) },
+                    { id: 'chargingPower', label: 'Leistung', list: chargingPowers, setList: setChargingPowers, key: 'list_charging_powers', val: editCustomPropValues['chargingPower'] || '', setVal: (v: string) => setEditCustomPropValues(prev => ({ ...prev, chargingPower: v })) },
+                  ];
+
+                  const activeStandardProps = assignedPropsList.filter(p => propertyAssignments[p.id]?.includes('device') && p.id !== 'brand');
+                  const activeCustomProps = customProperties.filter(p => propertyAssignments[p.id]?.includes('device'));
+
+                  const hasAnyActiveProps = (propertyAssignments['brand']?.includes('device') && editExpandedProps.brand) || activeStandardProps.some(p => editExpandedProps[p.id]) || activeCustomProps.some(p => editExpandedProps[p.id]);
+                  if (!hasAnyActiveProps) return null;
+
                   return (
-                    <div key={cabId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
-                      <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? 'Ladegerät' : 'Kabel'})</span>
-                      <button 
-                        type="button"
-                        onClick={() => handleUnlinkComponents('device', selectedDeviceDetails.id, isCharger ? 'charger' : 'cable', cabId)}
-                        style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.9rem', padding: 0 }}
-                      >
-                        &times;
-                      </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                      {/* Brand / Hersteller */}
+                      {propertyAssignments['brand']?.includes('device') && editExpandedProps.brand && (
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Hersteller</label>
+                          <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                            <select value={editDevManufacturer} onChange={e => handleSelectChange('Hersteller', e.target.value, brands, setBrands, 'list_brands', setEditDevManufacturer)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                              <option value="">-- Keine Angabe --</option>
+                              {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                            </select>
+                            <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, brand: false })); setEditDevManufacturer(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Standard active props (color, material etc.) */}
+                      {activeStandardProps.map(prop => {
+                        if (!editExpandedProps[prop.id]) return null;
+                        return (
+                          <div key={prop.id}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
+                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                              <select value={prop.val} onChange={e => handleSelectChange(prop.label, e.target.value, prop.list, prop.setList, prop.key, prop.setVal)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                                <option value="">-- Keine Angabe --</option>
+                                {prop.list.map(x => <option key={x} value={x}>{x}</option>)}
+                                <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                              </select>
+                              <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, [prop.id]: false })); prop.setVal(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Custom active props */}
+                      {activeCustomProps.map(prop => {
+                        if (!editExpandedProps[prop.id]) return null;
+                        return (
+                          <div key={prop.id}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
+                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                              <select
+                                value={editCustomPropValues[prop.id] || ''}
+                                onChange={e => handleSelectChange(
+                                  prop.label,
+                                  e.target.value,
+                                  prop.values,
+                                  (updatedValuesAction) => {
+                                    const updatedProps = customProperties.map(p => {
+                                      if (p.id === prop.id) {
+                                        const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
+                                        return { ...p, values: newValues };
+                                      }
+                                      return p;
+                                    });
+                                    setCustomProperties(updatedProps);
+                                    localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
+                                  },
+                                  `list_custom_prop_${prop.id}`,
+                                  (val) => setEditCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                                )}
+                                style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                              >
+                                <option value="">-- Keine Angabe --</option>
+                                {prop.values.map(v => <option key={v} value={v}>{v}</option>)}
+                                <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                              </select>
+                              <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, [prop.id]: false })); setEditCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
-                })}
-                {(!selectedDeviceDetails.compatibleCableIds || selectedDeviceDetails.compatibleCableIds.length === 0) && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Keine Verknüpfungen vorhanden.</span>
-                )}
-              </div>
-            </div>
+                })()}
 
-            {/* Vertically Stacked Actions */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-              <button type="submit" className="btn-primary" style={{ width: '100%' }}>Speichern</button>
-              <button 
-                type="button"
-                onClick={() => {
-                  handleDeleteDevice(selectedDeviceDetails.id);
-                  setSelectedDeviceDetails(null);
-                }} 
-                className="btn-primary" 
-                style={{ width: '100%', background: 'var(--error)', fontSize: '0.85rem' }}
-              >
-                Gerät löschen
-              </button>
-              <button type="button" onClick={() => setSelectedDeviceDetails(null)} style={{ width: '100%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.85rem' }}>Abbrechen</button>
-            </div>
-          </form>
+                {/* Collapsible Buttons */}
+                <div style={{ display: 'flex', gap: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', flexWrap: 'wrap' }}>
+                  {!editDevShowPort2 && (
+                    <button type="button" onClick={() => setEditDevShowPort2(true)} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                      + Port
+                    </button>
+                  )}
+                  {propertyAssignments.brand?.includes('device') && !editExpandedProps.brand && (
+                    <button type="button" onClick={() => setEditExpandedProps(p => ({ ...p, brand: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                      + Hersteller
+                    </button>
+                  )}
+                  {[
+                    { id: 'length', label: 'Kabellänge' },
+                    { id: 'color', label: 'Farbe' },
+                    { id: 'condition', label: 'Zustand' },
+                    { id: 'material', label: 'Material' },
+                    { id: 'dataRate', label: 'Datenrate' },
+                    { id: 'chargingPower', label: 'Leistung' },
+                  ].filter(prop => propertyAssignments[prop.id]?.includes('device') && !editExpandedProps[prop.id]).map(prop => (
+                    <button key={prop.id} type="button" onClick={() => setEditExpandedProps(p => ({ ...p, [prop.id]: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                      + {prop.label}
+                    </button>
+                  ))}
+                  {customProperties.filter(prop => propertyAssignments[prop.id]?.includes('device') && !editExpandedProps[prop.id]).map(prop => (
+                    <button key={prop.id} type="button" onClick={() => setEditExpandedProps(p => ({ ...p, [prop.id]: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                      + {prop.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Verknüpfte Komponenten */}
+                <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <strong style={{ fontSize: '0.9rem' }}>Verknüpfte Komponenten:</strong>
+                    <button 
+                      type="button"
+                      onClick={() => setLinkingSource({ id: selectedDeviceDetails.id, type: 'device', name: selectedDeviceDetails.name })}
+                      className="btn-primary" 
+                      style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                    >
+                      Verknüpfen
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    {(selectedDeviceDetails.compatibleCableIds || []).map(cabId => {
+                      const cab = cables.find(c => c.id === cabId);
+                      if (!cab) return null;
+                      const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
+                      return (
+                        <div key={cabId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
+                          <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? 'Ladegerät' : 'Kabel'})</span>
+                          <button 
+                            type="button"
+                            onClick={() => handleUnlinkComponents('device', selectedDeviceDetails.id, isCharger ? 'charger' : 'cable', cabId)}
+                            style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.9rem', padding: 0 }}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {(!selectedDeviceDetails.compatibleCableIds || selectedDeviceDetails.compatibleCableIds.length === 0) && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Keine Verknüpfungen vorhanden.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* EDITING CTA BUTTONS: 2-column grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
+                  <button type="submit" className="btn-primary" style={{ padding: '0.6rem' }}>Speichern</button>
+                  <button type="button" onClick={() => setEditDevIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>Abbrechen</button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       )}
 
-      {/* LIGHTBOX MODAL */}
-      {lightboxImage && (
+      {/* GALLERY MODAL */}
+      {galleryImages && galleryImages.length > 0 && (
         <div 
-          onClick={() => setLightboxImage(null)}
+          onClick={() => { setGalleryImages(null); setGalleryZoomed(false); }}
           style={{ 
             position: 'fixed', 
             top: 0, 
             left: 0, 
-            width: '100%', 
-            height: '100%', 
-            background: 'rgba(0,0,0,0.85)', 
+            width: '100vw', 
+            height: '100vh', 
+            background: 'rgba(0,0,0,0.95)', 
             display: 'flex', 
             flexDirection: 'column',
             alignItems: 'center', 
             justifyContent: 'center', 
             zIndex: 2000, 
-            backdropFilter: 'blur(10px)', 
-            padding: '1.5rem' 
+            backdropFilter: 'blur(15px)'
           }}
         >
           <div 
             onClick={e => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
             style={{ 
               position: 'relative', 
-              maxWidth: '90%', 
-              maxHeight: '80%', 
+              width: '100%', 
+              height: '100%', 
               display: 'flex', 
               flexDirection: 'column', 
               alignItems: 'center',
-              gap: '0.75rem' 
+              justifyContent: 'center',
+              padding: '2rem'
             }}
           >
+            {/* Close Button Red X at the top-right corner */}
             <button 
-              onClick={() => setLightboxImage(null)} 
+              onClick={() => { setGalleryImages(null); setGalleryZoomed(false); }} 
               style={{ 
                 position: 'absolute', 
-                top: '-40px', 
-                right: '0px', 
-                background: 'none', 
+                top: '20px', 
+                right: '20px', 
+                background: '#ef4444', 
                 border: 'none', 
                 color: 'white', 
-                fontSize: '2rem', 
+                fontSize: '1.5rem', 
                 cursor: 'pointer', 
-                lineHeight: 1 
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 2100,
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+                fontWeight: 'bold'
               }}
+              title="Galerie schließen"
             >
               &times;
             </button>
-            <img 
-              src={lightboxImage.url} 
-              alt={lightboxImage.label} 
-              style={{ 
-                maxWidth: '100%', 
-                maxHeight: '80vh', 
-                objectFit: 'contain', 
-                borderRadius: 'var(--radius-sm)', 
-                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-                border: '1px solid rgba(255,255,255,0.1)'
-              }} 
-            />
-            {lightboxImage.label && (
-              <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 600, background: 'rgba(0,0,0,0.6)', padding: '0.3rem 0.75rem', borderRadius: '20px' }}>
-                {lightboxImage.label}
-              </span>
+
+            {/* Left navigation arrow for desktop */}
+            {galleryIndex > 0 && (
+              <button
+                onClick={() => { setGalleryIndex(prev => prev - 1); setGalleryZoomed(false); }}
+                style={{
+                  position: 'absolute',
+                  left: '20px',
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '48px',
+                  height: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 2050,
+                  fontSize: '1.5rem'
+                }}
+              >
+                &#9001;
+              </button>
             )}
+
+            {/* Right navigation arrow for desktop */}
+            {galleryIndex < galleryImages.length - 1 && (
+              <button
+                onClick={() => { setGalleryIndex(prev => prev + 1); setGalleryZoomed(false); }}
+                style={{
+                  position: 'absolute',
+                  right: '20px',
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '48px',
+                  height: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 2050,
+                  fontSize: '1.5rem'
+                }}
+              >
+                &#9002;
+              </button>
+            )}
+
+            {/* Main Image Container */}
+            <div 
+              style={{ 
+                maxWidth: '95%', 
+                maxHeight: '75vh', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                borderRadius: 'var(--radius-md)'
+              }}
+            >
+              <img 
+                src={galleryImages[galleryIndex].url} 
+                alt={galleryImages[galleryIndex].label || `Bild ${galleryIndex + 1}`} 
+                onClick={() => setGalleryZoomed(prev => !prev)}
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '75vh', 
+                  objectFit: 'contain', 
+                  cursor: 'zoom-in',
+                  transform: galleryZoomed ? 'scale(1.5)' : 'scale(1)',
+                  transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.8)'
+                }} 
+              />
+            </div>
+
+            {/* Bottom Info bar */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', marginTop: '1.5rem', zIndex: 2050 }}>
+              {galleryImages[galleryIndex].label && (
+                <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: 600, background: 'rgba(0,0,0,0.6)', padding: '0.3rem 0.85rem', borderRadius: '20px' }}>
+                  {galleryImages[galleryIndex].label}
+                </span>
+              )}
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>
+                Bild {galleryIndex + 1} von {galleryImages.length}
+              </span>
+            </div>
           </div>
         </div>
       )}
