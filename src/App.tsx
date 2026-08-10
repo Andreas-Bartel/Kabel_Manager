@@ -1632,7 +1632,31 @@ export default function App() {
               setActiveTab('home');
             }
           }} 
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', marginBottom: '1rem', fontSize: '0.9rem', padding: 0 }}
+          className="btn-secondary"
+          style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.4rem', 
+            background: 'var(--bg-secondary)', 
+            border: '1px solid var(--border-glass)', 
+            color: 'var(--text-primary)', 
+            cursor: 'pointer', 
+            marginBottom: '1.25rem', 
+            fontSize: '0.85rem', 
+            padding: '0.45rem 0.9rem', 
+            borderRadius: '20px',
+            fontWeight: 600,
+            transition: 'all 0.15s ease',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.borderColor = 'var(--accent-primary)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.borderColor = 'var(--border-glass)';
+          }}
         >
           <ArrowLeft size={16} /> Zurück
         </button>
@@ -2160,7 +2184,7 @@ export default function App() {
                 onClick={() => { setInventoryLocationFilter(null); setInventoryLocCurrentParentId(undefined); }}
                 style={{ cursor: 'pointer', color: !inventoryLocationFilter ? 'var(--accent-primary)' : 'var(--text-secondary)', fontWeight: !inventoryLocationFilter ? 'bold' : 'normal' }}
               >
-                📍 Home [{cables.length + devices.length}]
+                🏠 Home [{cables.length + devices.length}]
               </span>
               {inventoryLocationFilter === 'none' && (
                 <>
