@@ -1852,7 +1852,6 @@ export default function App() {
             </div>
             <div style={{ textAlign: 'left' }}>
               <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-primary)', display: 'block' }}>Inventar</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Alle Kabel, Ladegeräte und Geräte im Überblick</span>
             </div>
           </div>
 
