@@ -1643,7 +1643,7 @@ export default function App() {
             border: '1px solid var(--border-glass)', 
             color: 'var(--text-primary)', 
             cursor: 'pointer', 
-            marginBottom: '1.25rem', 
+            marginBottom: '0rem', 
             fontSize: '0.85rem', 
             padding: '0.45rem 0.9rem', 
             borderRadius: '20px',
