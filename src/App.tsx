@@ -3540,7 +3540,7 @@ export default function App() {
               </div>
               {showDevPort2 && (
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Anschluss (Port 2, optional)</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Anschluss (Port 2)</label>
                   <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                     <select value={devConnector2} onChange={e => setDevConnector2(e.target.value)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
                       <option value="">-- Keiner --</option>
