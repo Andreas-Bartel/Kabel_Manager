@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.cableguy.app',
+  appId: 'de.kabelmanager.app',
   appName: 'Kabel Manager',
   webDir: 'dist',
   server: {

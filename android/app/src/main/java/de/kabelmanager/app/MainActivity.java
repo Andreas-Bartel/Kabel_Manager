@@ -1,4 +1,4 @@
-package com.cableguy.app;
+package de.kabelmanager.app;
 
 import com.getcapacitor.BridgeActivity;
 
