@@ -1636,6 +1636,8 @@ export default function App() {
           style={{ 
             display: 'inline-flex', 
             alignItems: 'center', 
+            alignSelf: 'flex-start',
+            width: 'fit-content',
             gap: '0.4rem', 
             background: 'var(--bg-secondary)', 
             border: '1px solid var(--border-glass)', 
