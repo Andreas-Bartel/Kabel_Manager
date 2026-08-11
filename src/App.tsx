@@ -1544,7 +1544,17 @@ export default function App() {
   );
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ 
+      maxWidth: '600px', 
+      margin: '0 auto', 
+      paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+      paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+      paddingLeft: 'calc(1.5rem + env(safe-area-inset-left, 0px))',
+      paddingRight: 'calc(1.5rem + env(safe-area-inset-right, 0px))',
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: '1.5rem' 
+    }}>
       
       {/* CSS-Druckbogen Style (Schritt 16) */}
       <style>{`
@@ -4358,7 +4368,7 @@ export default function App() {
             // READ-ONLY VIEW
             <>
               {/* Sub-page Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: 'calc(0.75rem + env(safe-area-inset-top, 0px)) 1rem 0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
                 <button type="button" onClick={() => setSelectedCableDetails(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
                   <ArrowLeft size={24} />
                 </button>
@@ -4543,7 +4553,7 @@ export default function App() {
             // EDIT VIEW
             <>
               {/* Sub-page Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: 'calc(0.75rem + env(safe-area-inset-top, 0px)) 1rem 0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
                 <button type="button" onClick={() => setEditIsEditing(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
                   <ArrowLeft size={24} />
                 </button>
@@ -5099,7 +5109,7 @@ export default function App() {
             // READ-ONLY VIEW
             <>
               {/* Sub-page Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: 'calc(0.75rem + env(safe-area-inset-top, 0px)) 1rem 0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
                 <button type="button" onClick={() => setSelectedDeviceDetails(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
                   <ArrowLeft size={24} />
                 </button>
@@ -5235,7 +5245,7 @@ export default function App() {
             // EDIT VIEW
             <>
               {/* Sub-page Header */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-glass)', padding: 'calc(0.75rem + env(safe-area-inset-top, 0px)) 1rem 0.75rem 1rem', background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 10 }}>
                 <button type="button" onClick={() => setEditDevIsEditing(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
                   <ArrowLeft size={24} />
                 </button>
