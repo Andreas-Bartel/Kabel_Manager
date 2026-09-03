@@ -1733,9 +1733,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
       {/* Search Results (auf allen Seiten außer Einstellungen anzeigen) */}
       {activeTab !== 'settings' && searchQuery && (
         <div className="glass-panel" style={{ padding: '1.25rem', marginBottom: '0.5rem' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Suchergebnisse</h3>
+          <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>{t('search_results', 'Suchergebnisse')}</h3>
           {searchResults.cables.length === 0 && searchResults.devices.length === 0 && (
-            <p style={{ color: 'var(--text-muted)' }}>Keine passenden Kabel/Geräte gefunden.</p>
+            <p style={{ color: 'var(--text-muted)' }}>{t('no_matching_items', 'Keine passenden Kabel/Geräte gefunden.')}</p>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {searchResults.cables.map(c => {
@@ -1774,11 +1774,11 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{c.name}</strong>
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
+                    {t('location', 'Ort')}: {c.locationId ? buildLocationPath(c.locationId, locations) : t('without_location', 'Kein Ort')}
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
                     <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
-                      {isCharger ? '🔌 Netzteil' : '🔌 Kabel'}: {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
+                      {isCharger ? `🔌 ${t('chargers', 'Netzteil')}` : `🔌 ${t('cables', 'Kabel')}`}: {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
                     </span>
                     {c.brand && (
                       <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
@@ -1823,7 +1823,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{d.name}</strong>
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  Ort: {d.locationId ? buildLocationPath(d.locationId, locations) : 'Kein Ort'}
+                  {t('location', 'Ort')}: {d.locationId ? buildLocationPath(d.locationId, locations) : t('without_location', 'Kein Ort')}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
                   <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
@@ -2524,14 +2524,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   </div>
 
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
+                    {t('location', 'Ort')}: {c.locationId ? buildLocationPath(c.locationId, locations) : t('without_location', 'Kein Ort')}
                   </div>
 
                   {/* Chips für Eigenschaften */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
                     {/* Ladegerät-Typ als Eigenschaft */}
                     <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
-                      🔌 {c.chargerType === 'only_fixed_cable' ? 'Kabel-Netzteil' : c.chargerType === 'hybrid' ? 'Hybrid-Lader' : 'Port-Lader'}
+                      🔌 {c.chargerType === 'only_fixed_cable' ? (language === 'en' ? 'Cable Charger' : 'Kabel-Netzteil') : c.chargerType === 'hybrid' ? (language === 'en' ? 'Hybrid Charger' : 'Hybrid-Lader') : (language === 'en' ? 'Port Charger' : 'Port-Lader')}
                     </span>
                     {/* Hersteller als Eigenschaft */}
                     {c.brand && (
@@ -3098,7 +3098,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   </div>
 
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
+                    {t('location', 'Ort')}: {c.locationId ? buildLocationPath(c.locationId, locations) : t('without_location', 'Kein Ort')}
                   </div>
 
                   {/* Chips für Eigenschaften */}
@@ -3143,12 +3143,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
       {activeTab === 'chargers' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateCable} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3>Ladegerät anlegen</h3>
+            <h3>{t('add_charger', 'Ladegerät anlegen')}</h3>
             <input type="text" placeholder={language === 'en' ? 'Name (optional, e.g. Anker 65W)' : 'Name (optional, z.B. Anker 65W)'} value={cabName} onChange={e => setCabName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
             
             {/* Typ-Auswahl des Ladegeräts */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Typ des Ladegeräts</label>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{t('charger_type_label', 'Typ des Ladegeräts')}</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <button 
                   type="button" 
@@ -3156,7 +3156,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: cabChargerType === 'only_ports' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
                 >
                   <USBAIcon size={18} />
-                  <span>Nur Ports</span>
+                  <span>{t('only_ports', 'Nur Ports')}</span>
                 </button>
                 <button 
                   type="button" 
@@ -3164,7 +3164,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: cabChargerType === 'only_fixed_cable' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
                 >
                   <CableIcon size={18} />
-                  <span>Festes Kabel</span>
+                  <span>{t('only_fixed_cable', 'Festes Kabel')}</span>
                 </button>
                 <button 
                   type="button" 
@@ -3988,7 +3988,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
                     <Upload size={18} style={{ color: 'var(--success)' }} />
-                    Datenexport
+                    {t('data_export', 'Datenexport (.json)')}
                   </span>
                   <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
                 </button>
@@ -4014,7 +4014,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
                     <Info size={18} style={{ color: 'var(--accent-primary)' }} />
-                    Über die App
+                    {t('about_app', 'Über die App')}
                   </span>
                   <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
                 </button>
@@ -4054,14 +4054,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {settingsView === 'layout' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <h3>Layout (Theme)</h3>
+                <h3>{t('layout_theme', 'Layout (Theme)')}</h3>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
-                  <span>Dark Theme aktivieren</span>
+                  <span>{t('enable_dark_theme', 'Dark Theme aktivieren')}</span>
                   <button 
                     onClick={() => setDarkMode(!darkMode)}
                     style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer' }}
                   >
-                    {darkMode ? 'Aktiviert (Dunkel)' : 'Deaktiviert (Hell)'}
+                    {darkMode ? t('theme_enabled', 'Aktiviert (Dunkel)') : t('theme_disabled', 'Deaktiviert (Hell)')}
                   </button>
                 </div>
               </div>
@@ -4072,11 +4072,11 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {settingsView === 'properties' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <h3>Eigenschaften verwalten</h3>
+                <h3>{t('manage_properties', 'Eigenschaften verwalten')}</h3>
 
                 {/* Komponentenauswahl ganz oben */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1rem' }}>
-                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Eigenschaften verwalten für:</label>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{t('manage_properties_for', 'Eigenschaften verwalten für:')}</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     {(['cable', 'charger', 'device'] as const).map(compType => (
                       <button
@@ -4107,7 +4107,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           alt="" 
                           style={{ width: '18px', height: '18px', objectFit: 'contain', filter: propsActiveComponent === compType ? 'brightness(0) invert(1)' : 'var(--icon-filter)' }} 
                         />
-                        {compType === 'cable' ? 'Kabel' : compType === 'charger' ? 'Ladegeräte' : 'Geräte'}
+                        {compType === 'cable' ? t('cables', 'Kabel') : compType === 'charger' ? t('chargers', 'Ladegeräte') : t('devices', 'Geräte')}
                       </button>
                     ))}
                   </div>
@@ -4116,33 +4116,33 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 {/* Vorhandene Eigenschaft zuordnen */}
                 {(() => {
                   const standardPropsList = [
-                    { id: 'brand', label: propsActiveComponent === 'device' ? 'Hersteller' : 'Marke' },
-                    { id: 'length', label: 'Kabellänge' },
-                    { id: 'color', label: 'Farbe' },
-                    { id: 'condition', label: 'Zustand' },
-                    { id: 'material', label: 'Material' },
-                    { id: 'dataRate', label: 'Datenrate' },
-                    { id: 'chargingPower', label: 'Ladeleistung' },
-                    { id: 'connectors', label: 'Stecker-Typen' }
+                    { id: 'brand', label: propsActiveComponent === 'device' ? t('manufacturer', 'Hersteller') : t('brand', 'Marke') },
+                    { id: 'length', label: t('length', 'Kabellänge') },
+                    { id: 'color', label: t('color', 'Farbe') },
+                    { id: 'condition', label: t('condition', 'Zustand') },
+                    { id: 'material', label: t('material', 'Material') },
+                    { id: 'dataRate', label: t('data_rate', 'Datenrate') },
+                    { id: 'chargingPower', label: t('charging_power', 'Leistung') },
+                    { id: 'connectors', label: t('connector', 'Stecker-Typen') }
                   ];
 
                   const unassignedProps = [
                     ...standardPropsList,
-                    ...customProperties.map(p => ({ id: p.id, label: p.label + ' (Benutzerdefiniert)' }))
+                    ...customProperties.map(p => ({ id: p.id, label: p.label + (language === 'en' ? ' (Custom)' : ' (Benutzerdefiniert)') }))
                   ].filter(p => !propertyAssignments[p.id]?.includes(propsActiveComponent));
 
                   if (unassignedProps.length === 0) return null;
 
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1rem' }}>
-                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Vorhandene Eigenschaft dieser Komponente zuordnen</label>
+                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('assign_existing_property', 'Vorhandene Eigenschaft dieser Komponente zuordnen')}</label>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <select
                           value={selectedPropToAssign}
                           onChange={e => setSelectedPropToAssign(e.target.value)}
                           style={{ flex: 1, padding: '0.5rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}
                         >
-                          <option value="">-- Eigenschaft wählen --</option>
+                          <option value="">{t('select_property', '-- Eigenschaft wählen --')}</option>
                           {unassignedProps.map(p => (
                             <option key={p.id} value={p.id}>{p.label}</option>
                           ))}
@@ -4161,7 +4161,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}
                           disabled={!selectedPropToAssign}
                         >
-                          Zuordnen
+                          {t('assign', 'Zuordnen')}
                         </button>
                       </div>
                     </div>
@@ -4170,17 +4170,17 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
                 {/* Formular für neue benutzerdefinierte Eigenschaftskategorie */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1rem' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Neue benutzerdefinierte Eigenschaftskategorie für diese Komponente anlegen</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('create_custom_category', 'Neue benutzerdefinierte Eigenschaftskategorie für diese Komponente anlegen')}</label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <input
                       type="text"
-                      placeholder="z.B. Garantiezeit, Seriennummer"
+                      placeholder={t('category_placeholder', 'z.B. Garantiezeit, Seriennummer')}
                       value={newCustomPropLabel}
                       onChange={e => setNewCustomPropLabel(e.target.value)}
                       style={{ flex: 1, padding: '0.5rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}
                     />
                     <button onClick={handleCreateCustomProperty} className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
-                      Erstellen
+                      {t('create', 'Erstellen')}
                     </button>
                   </div>
                 </div>
@@ -4380,16 +4380,16 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {settingsView === 'about' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
-                <h3 style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem', margin: 0 }}>Über die App</h3>
+                <h3 style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem', margin: 0 }}>{t('about_app', 'Über die App')}</h3>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', fontSize: '0.9rem' }}>
                   <div>
-                    <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Verantwortlicher:</strong>
+                    <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>{language === 'en' ? 'Responsible:' : 'Verantwortlicher:'}</strong>
                     <div style={{ marginTop: '0.2rem', fontWeight: 600 }}>Andreas Bartel</div>
                   </div>
                   
                   <div>
-                    <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>Kontakt / Support:</strong>
+                    <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('contact_support', 'Kontakt / Support:')}</strong>
                     <div style={{ marginTop: '0.2rem' }}>
                       <a 
                         href="mailto:workandbartel@gmail.com" 
@@ -4402,7 +4402,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
                   <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     <div>Kabel Manager v1.2.0</div>
-                    <div>Lokaler Gast-Modus aktiv</div>
+                    <div>{t('guest_mode_active', 'Lokaler Gast-Modus aktiv')}</div>
                   </div>
                 </div>
               </div>
@@ -4479,7 +4479,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, wordBreak: 'break-word' }}>{selectedCableDetails.name}</h3>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
-                      📍 Lagerort: {selectedCableDetails.locationId ? buildLocationPath(selectedCableDetails.locationId, locations) : 'Kein Lagerort'}
+                      📍 {t('location', 'Lagerort')}: {selectedCableDetails.locationId ? buildLocationPath(selectedCableDetails.locationId, locations) : t('without_location', 'Kein Lagerort')}
                     </div>
                   </div>
                 </div>
@@ -4504,26 +4504,26 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   {!selectedCableDetails.isMultiOutput ? (
                     // Cable details
                     <>
-                      <div><span style={{ color: 'var(--text-secondary)' }}>Stecker-Typ 1:</span> <strong>{selectedCableDetails.connectorType1 || selectedCableDetails.connectorType || 'USB-C'}</strong></div>
-                      {selectedCableDetails.cableStandard1 && <div><span style={{ color: 'var(--text-secondary)' }}>Standard 1:</span> <strong>{selectedCableDetails.cableStandard1}</strong></div>}
-                      <div><span style={{ color: 'var(--text-secondary)' }}>Stecker-Typ 2:</span> <strong>{selectedCableDetails.connectorType2 || 'USB-C'}</strong></div>
-                      {selectedCableDetails.cableStandard2 && <div><span style={{ color: 'var(--text-secondary)' }}>Standard 2:</span> <strong>{selectedCableDetails.cableStandard2}</strong></div>}
-                      {selectedCableDetails.length && <div><span style={{ color: 'var(--text-secondary)' }}>Länge:</span> <strong>{selectedCableDetails.length}</strong></div>}
+                      <div><span style={{ color: 'var(--text-secondary)' }}>{t('connector_type_1', 'Stecker-Typ 1')}:</span> <strong>{selectedCableDetails.connectorType1 || selectedCableDetails.connectorType || 'USB-C'}</strong></div>
+                      {selectedCableDetails.cableStandard1 && <div><span style={{ color: 'var(--text-secondary)' }}>{t('standard_connector_1', 'Standard 1')}:</span> <strong>{selectedCableDetails.cableStandard1}</strong></div>}
+                      <div><span style={{ color: 'var(--text-secondary)' }}>{t('connector_type_2', 'Stecker-Typ 2')}:</span> <strong>{selectedCableDetails.connectorType2 || 'USB-C'}</strong></div>
+                      {selectedCableDetails.cableStandard2 && <div><span style={{ color: 'var(--text-secondary)' }}>{t('standard_connector_2', 'Standard 2')}:</span> <strong>{selectedCableDetails.cableStandard2}</strong></div>}
+                      {selectedCableDetails.length && <div><span style={{ color: 'var(--text-secondary)' }}>{t('length', 'Länge')}:</span> <strong>{selectedCableDetails.length}</strong></div>}
                     </>
                   ) : (
                     // Charger details
                     <>
-                      <div><span style={{ color: 'var(--text-secondary)' }}>Ladegerät-Typ:</span> <strong>{selectedCableDetails.chargerType === 'only_ports' ? 'Nur Ports' : selectedCableDetails.chargerType === 'only_fixed_cable' ? 'Festes Kabel' : 'Hybrid'}</strong></div>
+                      <div><span style={{ color: 'var(--text-secondary)' }}>{t('charger_type', 'Ladegerät-Typ')}:</span> <strong>{selectedCableDetails.chargerType === 'only_ports' ? t('only_ports', 'Nur Ports') : selectedCableDetails.chargerType === 'only_fixed_cable' ? t('only_fixed_cable', 'Festes Kabel') : t('hybrid', 'Hybrid')}</strong></div>
                       {(selectedCableDetails.chargerType === 'only_fixed_cable' || selectedCableDetails.chargerType === 'hybrid') && (
                         <>
-                          <div><span style={{ color: 'var(--text-secondary)' }}>Festes Kabel Stecker:</span> <strong>{selectedCableDetails.fixedCableConnector}</strong></div>
-                          {selectedCableDetails.fixedCableLength && <div><span style={{ color: 'var(--text-secondary)' }}>Festes Kabel Länge:</span> <strong>{selectedCableDetails.fixedCableLength}</strong></div>}
-                          {selectedCableDetails.fixedCablePower && <div><span style={{ color: 'var(--text-secondary)' }}>Festes Kabel Leistung:</span> <strong>{selectedCableDetails.fixedCablePower}</strong></div>}
+                          <div><span style={{ color: 'var(--text-secondary)' }}>{t('fixed_cable_connector', 'Festes Kabel Stecker')}:</span> <strong>{selectedCableDetails.fixedCableConnector}</strong></div>
+                          {selectedCableDetails.fixedCableLength && <div><span style={{ color: 'var(--text-secondary)' }}>{t('fixed_cable_length', 'Festes Kabel Länge')}:</span> <strong>{selectedCableDetails.fixedCableLength}</strong></div>}
+                          {selectedCableDetails.fixedCablePower && <div><span style={{ color: 'var(--text-secondary)' }}>{t('fixed_cable_power', 'Festes Kabel Leistung')}:</span> <strong>{selectedCableDetails.fixedCablePower}</strong></div>}
                         </>
                       )}
                       {(selectedCableDetails.chargerType === 'only_ports' || selectedCableDetails.chargerType === 'hybrid') && selectedCableDetails.powerOutputs && selectedCableDetails.powerOutputs.length > 0 && (
                         <div>
-                          <span style={{ color: 'var(--text-secondary)' }}>Ausgänge (Ports):</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{t('ports', 'Ausgänge (Ports)')}:</span>
                           <div style={{ paddingLeft: '0.75rem', marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                             {selectedCableDetails.powerOutputs.map((p, idx) => (
                               <div key={idx} style={{ fontSize: '0.85rem' }}>
@@ -4537,12 +4537,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   )}
 
                   {/* Standard details */}
-                  {selectedCableDetails.brand && <div><span style={{ color: 'var(--text-secondary)' }}>Marke:</span> <strong>{selectedCableDetails.brand}</strong></div>}
-                  {selectedCableDetails.color && <div><span style={{ color: 'var(--text-secondary)' }}>Farbe:</span> <strong>{selectedCableDetails.color}</strong></div>}
-                  {selectedCableDetails.condition && <div><span style={{ color: 'var(--text-secondary)' }}>Zustand:</span> <strong>{selectedCableDetails.condition}</strong></div>}
-                  {selectedCableDetails.material && <div><span style={{ color: 'var(--text-secondary)' }}>Material:</span> <strong>{selectedCableDetails.material}</strong></div>}
-                  {selectedCableDetails.dataRate && <div><span style={{ color: 'var(--text-secondary)' }}>Datenrate:</span> <strong>{selectedCableDetails.dataRate}</strong></div>}
-                  {selectedCableDetails.chargingPower && <div><span style={{ color: 'var(--text-secondary)' }}>Ladeleistung:</span> <strong>{selectedCableDetails.chargingPower}</strong></div>}
+                  {selectedCableDetails.brand && <div><span style={{ color: 'var(--text-secondary)' }}>{t('brand', 'Marke')}:</span> <strong>{selectedCableDetails.brand}</strong></div>}
+                  {selectedCableDetails.color && <div><span style={{ color: 'var(--text-secondary)' }}>{t('color', 'Farbe')}:</span> <strong>{selectedCableDetails.color}</strong></div>}
+                  {selectedCableDetails.condition && <div><span style={{ color: 'var(--text-secondary)' }}>{t('condition', 'Zustand')}:</span> <strong>{selectedCableDetails.condition}</strong></div>}
+                  {selectedCableDetails.material && <div><span style={{ color: 'var(--text-secondary)' }}>{t('material', 'Material')}:</span> <strong>{selectedCableDetails.material}</strong></div>}
+                  {selectedCableDetails.dataRate && <div><span style={{ color: 'var(--text-secondary)' }}>{t('data_rate', 'Datenrate')}:</span> <strong>{selectedCableDetails.dataRate}</strong></div>}
+                  {selectedCableDetails.chargingPower && <div><span style={{ color: 'var(--text-secondary)' }}>{t('charging_power', 'Ladeleistung')}:</span> <strong>{selectedCableDetails.chargingPower}</strong></div>}
                   
                   {/* Custom properties */}
                   {selectedCableDetails.additionalProperties && Object.entries(selectedCableDetails.additionalProperties).map(([k, v]) => {
@@ -5218,7 +5218,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, wordBreak: 'break-word' }}>{selectedDeviceDetails.name}</h3>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
-                      📍 Lagerort: {selectedDeviceDetails.locationId ? buildLocationPath(selectedDeviceDetails.locationId, locations) : 'Kein Lagerort'}
+                      📍 {t('location', 'Lagerort')}: {selectedDeviceDetails.locationId ? buildLocationPath(selectedDeviceDetails.locationId, locations) : t('without_location', 'Kein Lagerort')}
                     </div>
                   </div>
                 </div>
@@ -5240,9 +5240,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
                 {/* Properties list */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-                  <div><span style={{ color: 'var(--text-secondary)' }}>Port:</span> <strong>{selectedDeviceDetails.requiredConnectorType}</strong></div>
-                  {selectedDeviceDetails.requiredConnectorType2 && <div><span style={{ color: 'var(--text-secondary)' }}>Port 2:</span> <strong>{selectedDeviceDetails.requiredConnectorType2}</strong></div>}
-                  {selectedDeviceDetails.manufacturer && <div><span style={{ color: 'var(--text-secondary)' }}>Hersteller:</span> <strong>{selectedDeviceDetails.manufacturer}</strong></div>}
+                  <div><span style={{ color: 'var(--text-secondary)' }}>{t('connector_port_1', 'Port 1')}:</span> <strong>{selectedDeviceDetails.requiredConnectorType}</strong></div>
+                  {selectedDeviceDetails.requiredConnectorType2 && <div><span style={{ color: 'var(--text-secondary)' }}>{t('connector_port_2', 'Port 2')}:</span> <strong>{selectedDeviceDetails.requiredConnectorType2}</strong></div>}
+                  {selectedDeviceDetails.manufacturer && <div><span style={{ color: 'var(--text-secondary)' }}>{t('manufacturer', 'Hersteller')}:</span> <strong>{selectedDeviceDetails.manufacturer}</strong></div>}
                   
                   {/* Custom properties */}
                   {selectedDeviceDetails.additionalProperties && Object.entries(selectedDeviceDetails.additionalProperties).map(([k, v]) => {
@@ -5256,7 +5256,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
                 {/* Verknüpfte Komponenten list */}
                 <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-                  <strong style={{ fontSize: '0.9rem', display: 'block', marginBottom: '0.5rem' }}>Verknüpfte Komponenten:</strong>
+                  <strong style={{ fontSize: '0.9rem', display: 'block', marginBottom: '0.5rem' }}>{t('linked_components', 'Verknüpfte Komponenten')}:</strong>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                     {(selectedDeviceDetails.compatibleCableIds || []).map(cabId => {
                       const cab = cables.find(c => c.id === cabId);
@@ -5264,12 +5264,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
                       return (
                         <div key={cabId} style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
-                          <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? 'Ladegerät' : 'Kabel'})</span>
+                          <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? t('chargers', 'Ladegerät') : t('cables', 'Kabel')})</span>
                         </div>
                       );
                     })}
                     {(!selectedDeviceDetails.compatibleCableIds || selectedDeviceDetails.compatibleCableIds.length === 0) && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Keine Verknüpfungen vorhanden.</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('no_links', 'Keine Verknüpfungen vorhanden.')}</span>
                     )}
                   </div>
                 </div>

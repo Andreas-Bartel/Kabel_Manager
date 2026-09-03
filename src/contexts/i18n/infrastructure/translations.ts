@@ -18,10 +18,13 @@ export const translations: Record<Language, TranslationDictionary> = {
 
     // Search & Filter
     search_placeholder: 'Suchen...',
+    search_results: 'Suchergebnisse',
+    no_matching_items: 'Keine passenden Kabel/Geräte gefunden.',
     filter_all: 'Alle',
     without_location: 'Ohne Lagerort',
+    no_matching_components: 'Keine passenden Komponenten gefunden.',
 
-    // Action Buttons
+    // Action Buttons & Labels
     add_cable: 'Kabel anlegen',
     add_charger: 'Ladegerät anlegen',
     add_device: 'Gerät anlegen',
@@ -40,6 +43,10 @@ export const translations: Record<Language, TranslationDictionary> = {
     // Form & Item Properties
     name: 'Name',
     connector: 'Anschluss',
+    connector_type_1: 'Stecker-Typ 1',
+    connector_type_2: 'Stecker-Typ 2',
+    standard_connector_1: 'Standard (Stecker 1)',
+    standard_connector_2: 'Standard (Stecker 2)',
     connector_port_1: 'Anschluss (Port 1)',
     connector_port_2: 'Anschluss (Port 2)',
     brand: 'Marke',
@@ -51,23 +58,41 @@ export const translations: Record<Language, TranslationDictionary> = {
     data_rate: 'Datenrate',
     charging_power: 'Leistung',
     charger_type: 'Ladegerät-Typ',
+    charger_type_label: 'Typ des Ladegeräts',
     only_ports: 'Nur Ports',
     only_fixed_cable: 'Festes Kabel',
     hybrid: 'Hybrid',
     ports: 'Ports',
+    port_type: 'Port-Typ',
+    watt_placeholder: 'Watt',
     add_port_button: '+ Weiteren Port hinzufügen',
     fixed_cable: 'Festes Kabel',
     fixed_cable_connector: 'Festes Kabel Stecker',
     fixed_cable_length: 'Festes Kabel Länge',
     fixed_cable_power: 'Festes Kabel Leistung',
     location: 'Lagerort',
+    no_parent_location: '-- Kein übergeordneter Ort --',
+    location_created: 'Ort erstellen',
     photos: 'Fotos',
     camera: 'Kamera',
     gallery: 'Galerie',
+    add_photo_label: 'Foto beschreiben & hinzufügen',
+    photo_desc_placeholder: 'Beschreibung (optional, z.B. Frontansicht)',
+    compression_running: 'Kompression läuft...',
     link: 'Verknüpfung',
     linked_components: 'Verknüpfte Komponenten',
+    no_links: 'Keine Verknüpfungen vorhanden.',
     no_specification: '-- Keine Angabe --',
     add_new_value: '+ Neuen Wert hinzufügen...',
+    description: 'Beschreibung',
+    no_description: 'Keine Beschreibung',
+
+    // Lists & Empty states
+    no_locations: 'Keine Lagerorte angelegt.',
+    no_cables: 'Keine Kabel registriert.',
+    no_chargers: 'Keine Ladegeräte registriert.',
+    no_devices: 'Keine Geräte registriert.',
+    no_items_found: 'Keine Elemente vorhanden.',
 
     // Settings
     language_setting: 'Sprache / Language',
@@ -84,6 +109,19 @@ export const translations: Record<Language, TranslationDictionary> = {
     data_export_desc: 'Lade deine gesamten Inventar- und Standortdaten als Sicherungskopie herunter.',
     privacy_policy: 'Datenschutzerklärung',
     privacy_policy_desc: 'Erfahre mehr über den lokalen Datenschutz und die Offline-Datenhaltung.',
+    about_app: 'Über die App',
+    layout_theme: 'Layout (Theme)',
+    enable_dark_theme: 'Dark Theme aktivieren',
+    theme_enabled: 'Aktiviert (Dunkel)',
+    theme_disabled: 'Deaktiviert (Hell)',
+    contact_support: 'Kontakt / Support:',
+    guest_mode_active: 'Lokaler Gast-Modus aktiv',
+
+    // Scan & Print
+    print_sheets: 'Etikettenbögen drucken',
+    print_sheets_desc: 'Drucke einen passgenauen A4-Bogen mit QR-Codes deiner Kabel aus.',
+    print_button: 'Drucken',
+    scan_title: 'QR-Code Scanner',
 
     // Details & Modals
     cable_details: 'Kabel Details',
@@ -93,8 +131,13 @@ export const translations: Record<Language, TranslationDictionary> = {
     edit_charger: 'Ladegerät bearbeiten',
     edit_device: 'Gerät bearbeiten',
     link_component: 'Komponente verknüpfen',
-    no_items_found: 'Keine Elemente vorhanden.',
+    compatibility: 'Kompatibilität',
+    compatible_devices: 'Kompatible Geräte',
+    compatible_cables: 'Kompatible Kabel',
     delete_confirm: 'Möchtest du dieses Element wirklich löschen?',
+    delete_location_confirm: 'Möchtest du diesen Lagerort wirklich löschen?',
+    delete_device_confirm: 'Möchtest du dieses Gerät wirklich löschen?',
+    delete_cable_confirm: 'Möchtest du dieses Kabel wirklich löschen?',
   },
 
   en: {
@@ -114,10 +157,13 @@ export const translations: Record<Language, TranslationDictionary> = {
 
     // Search & Filter
     search_placeholder: 'Search...',
+    search_results: 'Search Results',
+    no_matching_items: 'No matching cables or devices found.',
     filter_all: 'All',
     without_location: 'Unassigned Location',
+    no_matching_components: 'No matching components found.',
 
-    // Action Buttons
+    // Action Buttons & Labels
     add_cable: 'Add Cable',
     add_charger: 'Add Charger',
     add_device: 'Add Device',
@@ -136,6 +182,10 @@ export const translations: Record<Language, TranslationDictionary> = {
     // Form & Item Properties
     name: 'Name',
     connector: 'Connector',
+    connector_type_1: 'Connector Type 1',
+    connector_type_2: 'Connector Type 2',
+    standard_connector_1: 'Standard (Connector 1)',
+    standard_connector_2: 'Standard (Connector 2)',
     connector_port_1: 'Connector (Port 1)',
     connector_port_2: 'Connector (Port 2)',
     brand: 'Brand',
@@ -147,23 +197,41 @@ export const translations: Record<Language, TranslationDictionary> = {
     data_rate: 'Data Rate',
     charging_power: 'Power',
     charger_type: 'Charger Type',
+    charger_type_label: 'Charger Type',
     only_ports: 'Ports Only',
     only_fixed_cable: 'Fixed Cable',
     hybrid: 'Hybrid',
     ports: 'Ports',
+    port_type: 'Port Type',
+    watt_placeholder: 'Watts',
     add_port_button: '+ Add Another Port',
     fixed_cable: 'Fixed Cable',
     fixed_cable_connector: 'Fixed Cable Connector',
     fixed_cable_length: 'Fixed Cable Length',
     fixed_cable_power: 'Fixed Cable Power',
     location: 'Location',
+    no_parent_location: '-- No Parent Location --',
+    location_created: 'Create Location',
     photos: 'Photos',
     camera: 'Camera',
     gallery: 'Gallery',
+    add_photo_label: 'Describe & add photo',
+    photo_desc_placeholder: 'Description (optional, e.g. front view)',
+    compression_running: 'Compressing image...',
     link: 'Link',
     linked_components: 'Linked Components',
+    no_links: 'No linked components.',
     no_specification: '-- Not Specified --',
     add_new_value: '+ Add new value...',
+    description: 'Description',
+    no_description: 'No description',
+
+    // Lists & Empty states
+    no_locations: 'No locations created.',
+    no_cables: 'No cables registered.',
+    no_chargers: 'No chargers registered.',
+    no_devices: 'No devices registered.',
+    no_items_found: 'No items found.',
 
     // Settings
     language_setting: 'Language / Sprache',
@@ -180,6 +248,19 @@ export const translations: Record<Language, TranslationDictionary> = {
     data_export_desc: 'Download your entire inventory and location data as a local backup.',
     privacy_policy: 'Privacy Policy',
     privacy_policy_desc: 'Learn more about local privacy and offline data storage.',
+    about_app: 'About the App',
+    layout_theme: 'Layout (Theme)',
+    enable_dark_theme: 'Enable Dark Theme',
+    theme_enabled: 'Enabled (Dark)',
+    theme_disabled: 'Disabled (Light)',
+    contact_support: 'Contact / Support:',
+    guest_mode_active: 'Local guest mode active',
+
+    // Scan & Print
+    print_sheets: 'Print Label Sheets',
+    print_sheets_desc: 'Print a fitted A4 sheet with QR codes for your cables.',
+    print_button: 'Print',
+    scan_title: 'QR Code Scanner',
 
     // Details & Modals
     cable_details: 'Cable Details',
@@ -189,7 +270,12 @@ export const translations: Record<Language, TranslationDictionary> = {
     edit_charger: 'Edit Charger',
     edit_device: 'Edit Device',
     link_component: 'Link Component',
-    no_items_found: 'No items found.',
+    compatibility: 'Compatibility',
+    compatible_devices: 'Compatible Devices',
+    compatible_cables: 'Compatible Cables',
     delete_confirm: 'Are you sure you want to delete this item?',
+    delete_location_confirm: 'Are you sure you want to delete this location?',
+    delete_device_confirm: 'Are you sure you want to delete this device?',
+    delete_cable_confirm: 'Are you sure you want to delete this cable?',
   }
 };
