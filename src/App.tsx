@@ -30,6 +30,24 @@ const deleteDeviceUseCase = new DeleteDeviceUseCase(cableRepo, deviceRepo);
 const exportUseCase = new ExportUserDataUseCase(cableRepo, deviceRepo, locationRepo);
 const getCableByQrUseCase = new GetCableByQrPayloadUseCase(cableRepo);
 
+const GermanFlagIcon = () => (
+  <svg width="22" height="15" viewBox="0 0 640 480" style={{ borderRadius: '2px', flexShrink: 0, boxShadow: '0 0 2px rgba(0,0,0,0.4)' }}>
+    <path fill="#000" d="M0 0h640v160H0z"/>
+    <path fill="#DD0000" d="M0 160h640v160H0z"/>
+    <path fill="#FFCE00" d="M0 320h640v160H0z"/>
+  </svg>
+);
+
+const UKFlagIcon = () => (
+  <svg width="22" height="15" viewBox="0 0 640 480" style={{ borderRadius: '2px', flexShrink: 0, boxShadow: '0 0 2px rgba(0,0,0,0.4)' }}>
+    <path fill="#012169" d="M0 0h640v480H0z"/>
+    <path fill="#FFF" d="m75 0 245 180L565 0h75v55L415 240l225 185v55h-75L320 300 75 480H0v-55l225-185L0 55V0h75z"/>
+    <path fill="#C8102E" d="m424 280 216 160v40h-50L370 315l54-35zm-208 80L0 400v-40h50l220 165-54 35zM640 40 420 200l54 35L640 80V40zM0 40l220 160-54 35L0 80V40z"/>
+    <path fill="#FFF" d="M240 0h160v480H240zM0 160h640v160H0z"/>
+    <path fill="#C8102E" d="M267 0h106v480H267zM0 187h640v106H0z"/>
+  </svg>
+);
+
 const USBAIcon = ({ size = 18 }: { size?: number }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
     <rect x="3" y="6" width="18" height="12" rx="1.5" ry="1.5"/>
@@ -50,7 +68,8 @@ const generateUUID = () => {
 
 const formatDisplayValue = (val: string, lang: string): string => {
   if (!val) return val;
-  if (val === 'Klinke (3.5mm)' || val === 'Klinke') return lang === 'en' ? 'Jack (3.5mm)' : 'Klinke (3.5mm)';
+  if (val === 'Klinke (3.5mm)') return lang === 'en' ? 'Audio Jack (3.5mm)' : 'Klinke (3.5mm)';
+  if (val === 'Klinke') return lang === 'en' ? 'Audio Jack' : 'Klinke';
   if (val === 'Kein USB-Standard') return lang === 'en' ? 'No USB Standard' : 'Kein USB-Standard';
   if (val === 'Kein Standard / Spezifisch') return lang === 'en' ? 'No Standard / Specific' : 'Kein Standard / Spezifisch';
   if (val === 'Lightning MFi-Zertifiziert') return lang === 'en' ? 'Lightning MFi Certified' : 'Lightning MFi-Zertifiziert';
@@ -4119,7 +4138,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     className="tile-btn"
                     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: language === 'de' ? 'var(--accent-gradient)' : 'var(--bg-secondary)', border: language === 'de' ? 'none' : '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: language === 'de' ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
                   >
-                    <span>🇩🇪 Deutsch</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <GermanFlagIcon /> Deutsch
+                    </span>
                     {language === 'de' && <span>✓</span>}
                   </button>
 
@@ -4128,7 +4149,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     className="tile-btn"
                     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: language === 'en' ? 'var(--accent-gradient)' : 'var(--bg-secondary)', border: language === 'en' ? 'none' : '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: language === 'en' ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
                   >
-                    <span>🇬🇧 English</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <UKFlagIcon /> English
+                    </span>
                     {language === 'en' && <span>✓</span>}
                   </button>
                 </div>
@@ -4277,14 +4300,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   {/* Kabel-Standards (nur für Komponenten, die sie unterstützen, z.B. cable und charger) */}
                   {(propsActiveComponent === 'cable' || propsActiveComponent === 'charger') && (
                     <div style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
-                      <strong style={{ fontSize: '0.9rem' }}>Kabel-Standards (Gruppiert nach Steckertyp)</strong>
+                      <strong style={{ fontSize: '0.9rem' }}>{t('cable_standards_grouped', 'Kabel-Standards (Gruppiert nach Steckertyp)')}</strong>
                       {Object.entries(cableStandardGroups).map(([family, values]) => (
                         <div key={family} style={{ marginTop: '0.5rem', paddingLeft: '0.75rem', borderLeft: '2px solid var(--accent-primary)' }}>
                           <div style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', color: 'var(--accent-primary)' }}>{family}</div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
                             {values.map(val => (
                               <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                                {val}
+                                {formatDisplayValue(val, language)}
                                 <button onClick={() => handleRemoveCableStandard(family, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
                               </span>
                             ))}
@@ -4292,7 +4315,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
                             <input
                               type="text"
-                              placeholder={`Standard für ${family}...`}
+                              placeholder={`${t('standards_for', 'Standards für')} ${family}...`}
                               id={`input-standard-${family}`}
                               onKeyDown={e => {
                                 if (e.key === 'Enter') {
@@ -4323,14 +4346,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
                   {/* Standard Eigenschaften, falls dieser Komponente zugeordnet */}
                   {[
-                    { id: 'brand', label: propsActiveComponent === 'device' ? 'Hersteller' : 'Marke', list: brands, setList: setBrands, key: 'list_brands' },
-                    { id: 'length', label: 'Kabellänge', list: lengths, setList: setLengths, key: 'list_lengths' },
-                    { id: 'color', label: 'Farbe', list: colors, setList: setColors, key: 'list_colors' },
-                    { id: 'condition', label: 'Zustand', list: conditions, setList: setConditions, key: 'list_conditions' },
-                    { id: 'material', label: 'Material', list: materials, setList: setMaterials, key: 'list_materials' },
-                    { id: 'dataRate', label: 'Datenrate', list: dataRates, setList: setDataRates, key: 'list_data_rates' },
-                    { id: 'chargingPower', label: 'Ladeleistung', list: chargingPowers, setList: setChargingPowers, key: 'list_charging_powers' },
-                    { id: 'connectors', label: 'Stecker-Typen', list: connectors, setList: setConnectors, key: 'list_connectors' }
+                    { id: 'brand', label: propsActiveComponent === 'device' ? t('manufacturer', 'Hersteller') : t('brand', 'Marke'), list: brands, setList: setBrands, key: 'list_brands' },
+                    { id: 'length', label: t('length', 'Kabellänge'), list: lengths, setList: setLengths, key: 'list_lengths' },
+                    { id: 'color', label: t('color', 'Farbe'), list: colors, setList: setColors, key: 'list_colors' },
+                    { id: 'condition', label: t('condition', 'Zustand'), list: conditions, setList: setConditions, key: 'list_conditions' },
+                    { id: 'material', label: t('material', 'Material'), list: materials, setList: setMaterials, key: 'list_materials' },
+                    { id: 'dataRate', label: t('data_rate', 'Datenrate'), list: dataRates, setList: setDataRates, key: 'list_data_rates' },
+                    { id: 'chargingPower', label: t('charging_power', 'Ladeleistung'), list: chargingPowers, setList: setChargingPowers, key: 'list_charging_powers' },
+                    { id: 'connectors', label: t('connector_types', 'Stecker-Typen'), list: connectors, setList: setConnectors, key: 'list_connectors' }
                   ].filter(prop => propertyAssignments[prop.id]?.includes(propsActiveComponent)).map(prop => (
                     <div key={prop.id} style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -4343,13 +4366,13 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           }}
                           style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '0.75rem', cursor: 'pointer' }}
                         >
-                          Zuordnung aufheben
+                          {t('unassign_property', 'Zuordnung aufheben')}
                         </button>
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
                         {prop.list.map(val => (
                           <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                            {val}
+                            {formatDisplayValue(val, language)}
                             <button onClick={() => handleRemovePropValue(prop.key, prop.list, prop.setList, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
                           </span>
                         ))}
@@ -4357,7 +4380,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
                         <input
                           type="text"
-                          placeholder="Neuer Wert..."
+                          placeholder={`${t('new_value', 'Neuer Wert')}...`}
                           id={`input-val-${prop.id}`}
                           onKeyDown={e => {
                             if (e.key === 'Enter') {
@@ -4388,7 +4411,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   {customProperties.filter(prop => propertyAssignments[prop.id]?.includes(propsActiveComponent)).map(prop => (
                     <div key={prop.id} style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <strong style={{ fontSize: '0.9rem', color: 'var(--accent-secondary)' }}>🏷️ {prop.label} (Eigene Kategorie)</strong>
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--accent-secondary)' }}>🏷️ {prop.label} ({language === 'en' ? 'Custom Category' : 'Eigene Kategorie'})</strong>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button
                             type="button"
@@ -4398,15 +4421,15 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                             }}
                             style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '0.75rem', cursor: 'pointer' }}
                           >
-                            Zuordnung aufheben
+                            {t('unassign_property', 'Zuordnung aufheben')}
                           </button>
-                          <button onClick={() => handleDeleteCustomProperty(prop.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '0.75rem', cursor: 'pointer' }}>Kategorie löschen</button>
+                          <button onClick={() => handleDeleteCustomProperty(prop.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', fontSize: '0.75rem', cursor: 'pointer' }}>{t('delete_category', 'Kategorie löschen')}</button>
                         </div>
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
                         {prop.values.map(val => (
                           <span key={val} style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                            {val}
+                            {formatDisplayValue(val, language)}
                             <button onClick={() => handleRemoveCustomPropValue(prop.id, val)} style={{ background: 'none', color: 'var(--error)', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
                           </span>
                         ))}
@@ -4414,7 +4437,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.4rem' }}>
                         <input
                           type="text"
-                          placeholder="Neuer Wert..."
+                          placeholder={`${t('new_value', 'Neuer Wert')}...`}
                           id={`input-val-${prop.id}`}
                           onKeyDown={e => {
                             if (e.key === 'Enter') {
@@ -4449,13 +4472,13 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {settingsView === 'export' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <h3>Datenexport</h3>
+                <h3>{t('data_export', 'Datenexport')}</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
-                    Exportiere deine gesamten Daten (Kabel, Ladegeräte, Geräte und Lagerorte) in eine lokale JSON-Datei zur Backup-Sicherung.
+                    {t('data_export_full_desc', 'Exportiere deine gesamten Daten (Kabel, Ladegeräte, Geräte und Lagerorte) in eine lokale JSON-Datei zur Backup-Sicherung.')}
                   </p>
                   <button onClick={handleExportData} className="btn-primary" style={{ width: '100%', padding: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                    <Upload size={16} /> Exportieren (.json)
+                    <Upload size={16} /> {t('export_button', 'Exportieren (.json)')}
                   </button>
                 </div>
               </div>
