@@ -1762,14 +1762,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       flexShrink: 0
                     }}>
                       <img 
-                        src={c.images && c.images.length > 0 ? c.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                        src={c.images && c.images.length > 0 ? c.images[0].url : '/placeholder_no_photo.png'} 
                         alt="" 
                         style={{ 
                           width: '100%', 
                           height: '100%', 
-                          objectFit: c.images && c.images.length > 0 ? 'cover' : 'contain',
-                          opacity: c.images && c.images.length > 0 ? 1 : 0.4,
-                          padding: c.images && c.images.length > 0 ? 0 : '8px'
+                          objectFit: 'cover'
                         }} 
                       />
                     </div>
@@ -1813,14 +1811,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     flexShrink: 0
                   }}>
                     <img 
-                      src={d.images && d.images.length > 0 ? d.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                      src={d.images && d.images.length > 0 ? d.images[0].url : '/placeholder_no_photo.png'} 
                       alt="" 
                       style={{ 
                         width: '100%', 
                         height: '100%', 
-                        objectFit: d.images && d.images.length > 0 ? 'cover' : 'contain',
-                        opacity: d.images && d.images.length > 0 ? 1 : 0.4,
-                        padding: d.images && d.images.length > 0 ? 0 : '8px'
+                        objectFit: 'cover'
                       }} 
                     />
                   </div>
@@ -2515,14 +2511,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       flexShrink: 0
                     }}>
                       <img 
-                        src={c.images && c.images.length > 0 ? c.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                        src={c.images && c.images.length > 0 ? c.images[0].url : '/placeholder_no_photo.png'} 
                         alt="" 
                         style={{ 
                           width: '100%', 
                           height: '100%', 
-                          objectFit: c.images && c.images.length > 0 ? 'cover' : 'contain',
-                          opacity: c.images && c.images.length > 0 ? 1 : 0.4,
-                          padding: c.images && c.images.length > 0 ? 0 : '8px'
+                          objectFit: 'cover'
                         }} 
                       />
                     </div>
@@ -3511,14 +3505,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       flexShrink: 0
                     }}>
                       <img 
-                        src={c.images && c.images.length > 0 ? c.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                        src={c.images && c.images.length > 0 ? c.images[0].url : '/placeholder_no_photo.png'} 
                         alt="" 
                         style={{ 
                           width: '100%', 
                           height: '100%', 
-                          objectFit: c.images && c.images.length > 0 ? 'cover' : 'contain',
-                          opacity: c.images && c.images.length > 0 ? 1 : 0.4,
-                          padding: c.images && c.images.length > 0 ? 0 : '8px'
+                          objectFit: 'cover'
                         }} 
                       />
                     </div>
@@ -3908,14 +3900,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         flexShrink: 0
                       }}>
                         <img 
-                          src={d.images && d.images.length > 0 ? d.images[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                          src={d.images && d.images.length > 0 ? d.images[0].url : '/placeholder_no_photo.png'} 
                           alt="" 
                           style={{ 
                             width: '100%', 
                             height: '100%', 
-                            objectFit: d.images && d.images.length > 0 ? 'cover' : 'contain',
-                            opacity: d.images && d.images.length > 0 ? 1 : 0.4,
-                            padding: d.images && d.images.length > 0 ? 0 : '8px'
+                            objectFit: 'cover'
                           }} 
                         />
                       </div>
@@ -4472,14 +4462,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     }}
                   >
                     <img 
-                      src={editImages.length > 0 ? editImages[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                      src={editImages.length > 0 ? editImages[0].url : '/placeholder_no_photo.png'} 
                       alt="Vorschau" 
                       style={{ 
                         width: '100%', 
                         height: '100%', 
-                        objectFit: editImages.length > 0 ? 'cover' : 'contain', 
-                        opacity: editImages.length > 0 ? 1 : 0.5,
-                        padding: editImages.length > 0 ? 0 : '16px'
+                        objectFit: 'cover'
                       }} 
                     />
                     {editImages.length > 1 && (
@@ -5213,14 +5201,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     }}
                   >
                     <img 
-                      src={editDevImages.length > 0 ? editDevImages[0].url : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><rect width='18' height='18' x='3' y='3' rx='2' ry='2'/><path d='M14.5 12.5 12 10 6 16'/><path d='m21 16-4-4-4 4'/><circle cx='8.5' cy='8.5' r='1.5'/><line x1='2' x2='22' y1='2' y2='22'/></svg>"} 
+                      src={editDevImages.length > 0 ? editDevImages[0].url : '/placeholder_no_photo.png'} 
                       alt="Vorschau" 
                       style={{ 
                         width: '100%', 
                         height: '100%', 
-                        objectFit: editDevImages.length > 0 ? 'cover' : 'contain', 
-                        opacity: editDevImages.length > 0 ? 1 : 0.5,
-                        padding: editDevImages.length > 0 ? 0 : '16px'
+                        objectFit: 'cover'
                       }} 
                     />
                     {editDevImages.length > 1 && (
