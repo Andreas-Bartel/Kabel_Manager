@@ -5,9 +5,9 @@ export interface ImageAttachment {
 }
 
 export interface PowerOutput {
-  voltage: number; // in Volt (V)
-  amperage: number; // in Ampere (A)
-  wattage: number; // in Watt (W)
+  voltage?: number; // in Volt (V)
+  amperage?: number; // in Ampere (A)
+  wattage?: number; // in Watt (W)
   portType: 'USB-A' | 'USB-C' | 'Micro-USB' | 'Lightning' | 'DC-Jack' | 'Other';
 }
 
@@ -112,9 +112,6 @@ export function checkPowerCompatibility(cable: Cable, device: Device): Compatibi
 
   if (matchConnector) {
     const matchingPort = (cable.powerOutputs || []).find(o => o.portType === matchConnector) || {
-      voltage: 5,
-      amperage: 2,
-      wattage: 10,
       portType: matchConnector as any
     };
     return {

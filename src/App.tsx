@@ -96,8 +96,8 @@ export default function App() {
   const [cabIsMulti, setCabIsMulti] = useState(false);
   const [cabImage, setCabImage] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [ports, setPorts] = useState<{ voltage: number; amperage: number; wattage: number; portType: string }[]>([
-    { voltage: 5, amperage: 0, wattage: 0, portType: '' }
+  const [ports, setPorts] = useState<{ voltage?: number; amperage?: number; wattage?: number; portType: string }[]>([
+    { portType: '' }
   ]);
   const [cabChargerType, setCabChargerType] = useState<'only_ports' | 'only_fixed_cable' | 'hybrid'>('only_ports');
   const [cabFixedLength, setCabFixedLength] = useState('');
@@ -140,7 +140,7 @@ export default function App() {
   const [editFixedLength, setEditFixedLength] = useState('');
   const [editFixedPower, setEditFixedPower] = useState('');
   const [editFixedConnector, setEditFixedConnector] = useState('USB-C');
-  const [editPorts, setEditPorts] = useState<{ voltage: number; amperage: number; wattage: number; portType: string }[]>([]);
+  const [editPorts, setEditPorts] = useState<{ voltage?: number; amperage?: number; wattage?: number; portType: string }[]>([]);
   const [editExpandedProps, setEditExpandedProps] = useState<Record<string, boolean>>({});
   const [editShowLoc, setEditShowLoc] = useState(false);
   const [editShowPhotos, setEditShowPhotos] = useState(false);
@@ -985,9 +985,9 @@ export default function App() {
     e.preventDefault();
     const powerOutputs = cabIsMulti && (cabChargerType === 'only_ports' || cabChargerType === 'hybrid')
       ? ports.map(p => ({
-          voltage: 5,
-          amperage: parseFloat(((p.wattage || 10) / 5).toFixed(2)),
-          wattage: p.wattage || 10,
+          wattage: p.wattage && p.wattage > 0 ? p.wattage : undefined,
+          voltage: p.voltage && p.voltage > 0 ? p.voltage : undefined,
+          amperage: p.amperage && p.amperage > 0 ? p.amperage : undefined,
           portType: p.portType as any
         }))
       : undefined;
@@ -1079,7 +1079,7 @@ export default function App() {
     setCabFixedLength('');
     setCabFixedPower('');
     setCabFixedConnector('USB-C');
-    setPorts([{ voltage: 5, amperage: 0, wattage: 0, portType: '' }]);
+    setPorts([{ portType: '' }]);
     setShowCabLoc(false);
     setShowCabPhotos(false);
     setShowChargerLoc(false);
@@ -1371,9 +1371,9 @@ export default function App() {
     
     const powerOutputs = editIsMulti && (editChargerType === 'only_ports' || editChargerType === 'hybrid')
       ? editPorts.map(p => ({
-          voltage: 5,
-          amperage: parseFloat(((p.wattage || 10) / 5).toFixed(2)),
-          wattage: p.wattage || 10,
+          wattage: p.wattage && p.wattage > 0 ? p.wattage : undefined,
+          voltage: p.voltage && p.voltage > 0 ? p.voltage : undefined,
+          amperage: p.amperage && p.amperage > 0 ? p.amperage : undefined,
           portType: p.portType as any
         }))
       : undefined;
@@ -2544,7 +2544,7 @@ export default function App() {
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Ports:</span>
                         {c.powerOutputs.map((p, i) => (
                           <span key={i} style={{ fontSize: '0.7rem', background: 'var(--accent-glow)', color: 'var(--accent-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                            {p.portType}: {p.wattage ? `${p.wattage}W` : `${p.voltage * p.amperage}W`} ({p.voltage}V / {p.amperage}A)
+                            {p.portType}{p.wattage ? `: ${p.wattage}W` : (p.voltage && p.amperage ? `: ${p.voltage * p.amperage}W` : '')}{p.voltage && p.amperage ? ` (${p.voltage}V / ${p.amperage}A)` : ''}
                           </span>
                         ))}
                       </div>
@@ -3219,7 +3219,7 @@ export default function App() {
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={() => setPorts([...ports, { voltage: 5, amperage: 0, wattage: 0, portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>+ Weiteren Port hinzufügen</button>
+                <button type="button" onClick={() => setPorts([...ports, { portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>+ Weiteren Port hinzufügen</button>
               </div>
             )}
 
@@ -3540,7 +3540,7 @@ export default function App() {
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Ports:</span>
                         {c.powerOutputs.map((p, i) => (
                           <span key={i} style={{ fontSize: '0.7rem', background: 'var(--accent-glow)', color: 'var(--accent-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                            {p.portType}: {p.wattage ? `${p.wattage}W` : `${p.voltage * p.amperage}W`} ({p.voltage}V / {p.amperage}A)
+                            {p.portType}{p.wattage ? `: ${p.wattage}W` : (p.voltage && p.amperage ? `: ${p.voltage * p.amperage}W` : '')}{p.voltage && p.amperage ? ` (${p.voltage}V / ${p.amperage}A)` : ''}
                           </span>
                         ))}
                       </div>
@@ -4463,7 +4463,7 @@ export default function App() {
                           <div style={{ paddingLeft: '0.75rem', marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                             {selectedCableDetails.powerOutputs.map((p, idx) => (
                               <div key={idx} style={{ fontSize: '0.85rem' }}>
-                                Port {idx + 1}: <strong>{p.portType} ({p.wattage}W)</strong>
+                                Port {idx + 1}: <strong>{p.portType}{p.wattage ? ` (${p.wattage}W)` : (p.voltage && p.amperage ? ` (${p.voltage * p.amperage}W - ${p.voltage}V / ${p.amperage}A)` : '')}</strong>
                               </div>
                             ))}
                           </div>
@@ -4791,7 +4791,7 @@ export default function App() {
                             )}
                           </div>
                         ))}
-                        <button type="button" onClick={() => setEditPorts([...editPorts, { voltage: 5, amperage: 0, wattage: 0, portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>+ Weiteren Port hinzufügen</button>
+                        <button type="button" onClick={() => setEditPorts([...editPorts, { portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>+ Weiteren Port hinzufügen</button>
                       </div>
                     )}
                   </>
