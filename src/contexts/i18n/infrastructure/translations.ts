@@ -22,6 +22,8 @@ export const translations: Record<Language, TranslationDictionary> = {
     no_matching_items: 'Keine passenden Kabel/Geräte gefunden.',
     filter_all: 'Alle',
     without_location: 'Ohne Lagerort',
+    location_filter: 'Lagerort-Filter',
+    components: 'Komponenten',
     no_matching_components: 'Keine passenden Komponenten gefunden.',
 
     // Action Buttons & Labels
@@ -42,7 +44,7 @@ export const translations: Record<Language, TranslationDictionary> = {
 
     // Form & Item Properties
     name: 'Name',
-    connector: 'Anschluss',
+    connector: 'Stecker-Typ',
     connector_type_1: 'Stecker-Typ 1',
     connector_type_2: 'Stecker-Typ 2',
     standard_connector_1: 'Standard (Stecker 1)',
@@ -56,7 +58,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     condition: 'Zustand',
     material: 'Material',
     data_rate: 'Datenrate',
-    charging_power: 'Leistung',
+    charging_power: 'Ladeleistung',
     charger_type: 'Ladegerät-Typ',
     charger_type_label: 'Typ des Ladegeräts',
     only_ports: 'Nur Ports',
@@ -64,6 +66,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     hybrid: 'Hybrid',
     ports: 'Ports',
     port_type: 'Port-Typ',
+    port: 'Port',
     watt_placeholder: 'Watt',
     add_port_button: '+ Weiteren Port hinzufügen',
     fixed_cable: 'Festes Kabel',
@@ -71,9 +74,12 @@ export const translations: Record<Language, TranslationDictionary> = {
     fixed_cable_length: 'Festes Kabel Länge',
     fixed_cable_power: 'Festes Kabel Leistung',
     location: 'Lagerort',
+    location_colon: 'Ort:',
+    no_location: 'Kein Ort',
     no_parent_location: '-- Kein übergeordneter Ort --',
     location_created: 'Ort erstellen',
     photos: 'Fotos',
+    photo: 'Foto',
     camera: 'Kamera',
     gallery: 'Galerie',
     add_photo_label: 'Foto beschreiben & hinzufügen',
@@ -95,7 +101,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     no_items_found: 'Keine Elemente vorhanden.',
 
     // Settings
-    language_setting: 'Sprache / Language',
+    language_setting: 'Sprache',
     german: 'Deutsch',
     english: 'English',
     manage_properties: 'Eigenschaften verwalten',
@@ -160,7 +166,9 @@ export const translations: Record<Language, TranslationDictionary> = {
     search_results: 'Search Results',
     no_matching_items: 'No matching cables or devices found.',
     filter_all: 'All',
-    without_location: 'Unassigned Location',
+    without_location: 'Without Location',
+    location_filter: 'Location Filter',
+    components: 'Components',
     no_matching_components: 'No matching components found.',
 
     // Action Buttons & Labels
@@ -181,7 +189,7 @@ export const translations: Record<Language, TranslationDictionary> = {
 
     // Form & Item Properties
     name: 'Name',
-    connector: 'Connector',
+    connector: 'Connector Type',
     connector_type_1: 'Connector Type 1',
     connector_type_2: 'Connector Type 2',
     standard_connector_1: 'Standard (Connector 1)',
@@ -195,7 +203,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     condition: 'Condition',
     material: 'Material',
     data_rate: 'Data Rate',
-    charging_power: 'Power',
+    charging_power: 'Charging Power',
     charger_type: 'Charger Type',
     charger_type_label: 'Charger Type',
     only_ports: 'Ports Only',
@@ -203,6 +211,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     hybrid: 'Hybrid',
     ports: 'Ports',
     port_type: 'Port Type',
+    port: 'Port',
     watt_placeholder: 'Watts',
     add_port_button: '+ Add Another Port',
     fixed_cable: 'Fixed Cable',
@@ -210,9 +219,12 @@ export const translations: Record<Language, TranslationDictionary> = {
     fixed_cable_length: 'Fixed Cable Length',
     fixed_cable_power: 'Fixed Cable Power',
     location: 'Location',
+    location_colon: 'Location:',
+    no_location: 'No location',
     no_parent_location: '-- No Parent Location --',
     location_created: 'Create Location',
     photos: 'Photos',
+    photo: 'Photo',
     camera: 'Camera',
     gallery: 'Gallery',
     add_photo_label: 'Describe & add photo',
@@ -234,7 +246,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     no_items_found: 'No items found.',
 
     // Settings
-    language_setting: 'Language / Sprache',
+    language_setting: 'Language',
     german: 'Deutsch',
     english: 'English',
     manage_properties: 'Manage Properties',

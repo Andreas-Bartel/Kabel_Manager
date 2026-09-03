@@ -2178,7 +2178,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {/* Type filter segmented buttons */}
           <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
             {(['all', 'cables', 'chargers', 'devices'] as const).map(type => {
-              const label = type === 'all' ? 'Alle' : type === 'cables' ? 'Kabel' : type === 'chargers' ? 'Ladegeräte' : 'Geräte';
+              const label = type === 'all' ? t('filter_all', 'Alle') : type === 'cables' ? t('cables', 'Kabel') : type === 'chargers' ? t('chargers', 'Ladegeräte') : t('devices', 'Geräte');
               const count = type === 'all' 
                 ? (filteredCablesForInventory.length + filteredChargersForInventory.length + filteredDevicesForInventory.length)
                 : type === 'cables' 
@@ -2216,7 +2216,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {/* Hierarchical Location selector */}
           <div className="glass-panel" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 700 }}>
-              Lagerort-Filter
+              {t('location_filter', 'Lagerort-Filter')}
             </div>
 
             {/* Breadcrumbs path */}
@@ -2231,7 +2231,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 <>
                   <span style={{ color: 'var(--text-secondary)' }}>&gt;</span>
                   <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>
-                    Ohne Lagerort [{(cables.filter(c => !c.locationId).length + devices.filter(d => !d.locationId).length)}]
+                    {t('without_location', 'Ohne Lagerort')} [{(cables.filter(c => !c.locationId).length + devices.filter(d => !d.locationId).length)}]
                   </span>
                 </>
               )}
@@ -2295,7 +2295,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         }}
                       >
                         <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem', color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                          📦 Ohne Lagerort
+                          📦 {t('without_location', 'Ohne Lagerort')}
                         </span>
                         <span style={{ fontSize: '0.75rem', background: 'var(--bg-tertiary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
                           {countNoLoc}
@@ -2363,7 +2363,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       cursor: 'pointer'
                     }}
                   >
-                    <span>← Eine Ebene nach oben</span>
+                    <span>← {language === 'en' ? 'Up one level' : 'Eine Ebene nach oben'}</span>
                   </div>
 
                   {locations.filter(l => l.parentLocationId === inventoryLocCurrentParentId).map(loc => {
@@ -2409,7 +2409,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
           {/* Unified list of filtered components */}
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
-            <h3>Komponenten</h3>
+            <h3>{t('components', 'Komponenten')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
               {/* Cables list */}
               {(inventoryTypeFilter === 'all' || inventoryTypeFilter === 'cables') && filteredCablesForInventory.map(c => (
@@ -2656,7 +2656,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 (inventoryTypeFilter === 'chargers' && filteredChargersForInventory.length === 0) ||
                 (inventoryTypeFilter === 'devices' && filteredDevicesForInventory.length === 0)) && (
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', textAlign: 'center', padding: '1rem 0' }}>
-                  Keine passenden Komponenten gefunden.
+                  {t('no_matching_components', 'Keine passenden Komponenten gefunden.')}
                 </span>
               )}
             </div>
@@ -2669,22 +2669,22 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateLocation} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3>{t('add_location', 'Lagerort anlegen')}</h3>
-            <input type="text" placeholder="Name" value={locName} onChange={e => setLocName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
+            <input type="text" placeholder={t('name', 'Name')} value={locName} onChange={e => setLocName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
             <select value={locParent} onChange={e => setLocParent(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-              <option value="">-- Kein übergeordneter Ort --</option>
+              <option value="">{t('no_parent_location', '-- Kein übergeordneter Ort --')}</option>
               {locations.map(l => (
                 <option key={l.id} value={l.id}>{l.name}</option>
               ))}
             </select>
-            <input type="text" placeholder="Beschreibung" value={locDesc} onChange={e => setLocDesc(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
-            <button type="submit" className="btn-primary">Ort erstellen</button>
+            <input type="text" placeholder={t('description', 'Beschreibung')} value={locDesc} onChange={e => setLocDesc(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
+            <button type="submit" className="btn-primary">{t('location_created', 'Ort erstellen')}</button>
           </form>
 
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
             <h3>{t('locations', 'Lagerorte')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
               {locations.length === 0 ? (
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Keine Lagerorte angelegt.</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{t('no_locations', 'Keine Lagerorte angelegt.')}</span>
               ) : (
                 renderLocationTree(undefined, 0)
               )}
@@ -2895,32 +2895,32 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <div style={{ display: 'flex', gap: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', flexWrap: 'wrap' }}>
               {propertyAssignments.brand?.includes('cable') && !expandedCabProps.brand && (
                 <button type="button" onClick={() => setExpandedCabProps(p => ({ ...p, brand: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Marke
+                  + {t('brand', 'Marke')}
                 </button>
               )}
               {propertyAssignments.color?.includes('cable') && !expandedCabProps.color && (
                 <button type="button" onClick={() => setExpandedCabProps(p => ({ ...p, color: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Farbe
+                  + {t('color', 'Farbe')}
                 </button>
               )}
               {propertyAssignments.condition?.includes('cable') && !expandedCabProps.condition && (
                 <button type="button" onClick={() => setExpandedCabProps(p => ({ ...p, condition: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Zustand
+                  + {t('condition', 'Zustand')}
                 </button>
               )}
               {propertyAssignments.material?.includes('cable') && !expandedCabProps.material && (
                 <button type="button" onClick={() => setExpandedCabProps(p => ({ ...p, material: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Material
+                  + {t('material', 'Material')}
                 </button>
               )}
               {propertyAssignments.dataRate?.includes('cable') && !expandedCabProps.dataRate && (
                 <button type="button" onClick={() => setExpandedCabProps(p => ({ ...p, dataRate: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Datenrate
+                  + {t('data_rate', 'Datenrate')}
                 </button>
               )}
               {propertyAssignments.chargingPower?.includes('cable') && !expandedCabProps.chargingPower && (
                 <button type="button" onClick={() => setExpandedCabProps(p => ({ ...p, chargingPower: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Ladeleistung
+                  + {t('charging_power', 'Ladeleistung')}
                 </button>
               )}
               {customProperties.filter(prop => propertyAssignments[prop.id]?.includes('cable') && !expandedCabProps[prop.id]).map(prop => (
@@ -2933,14 +2933,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 onClick={() => setShowCabLoc(!showCabLoc)} 
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
               >
-                {cabLocation ? `Lagerort: ${locations.find(l => l.id === cabLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+                {cabLocation ? `${t('location', 'Lagerort')}: ${locations.find(l => l.id === cabLocation)?.name || (language === 'en' ? 'Selected' : 'Gewählt')}` : `+ ${t('location', 'Lagerort')}`}
               </button>
               <button 
                 type="button" 
                 onClick={() => setShowCabPhotos(!showCabPhotos)} 
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
               >
-                {cabImages.length > 0 ? `Fotos (${cabImages.length})` : '+ Foto'}
+                {cabImages.length > 0 ? `${t('photos', 'Fotos')} (${cabImages.length})` : `+ ${t('photo', 'Foto')}`}
               </button>
               {!showCabLinks && (
                 <button 
@@ -2948,7 +2948,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   onClick={() => setShowCabLinks(true)} 
                   style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
                 >
-                  + Verknüpfung
+                  + {t('link', 'Verknüpfung')}
                 </button>
               )}
             </div>
@@ -2957,14 +2957,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {showCabLinks && (
               <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Verknüpfte Komponenten:</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('linked_components', 'Verknüpfte Komponenten')}:</span>
                   <button 
                     type="button"
-                    onClick={() => setLinkingSource({ id: 'form_cable', type: 'cable', name: cabName || 'Neues Kabel' })}
+                    onClick={() => setLinkingSource({ id: 'form_cable', type: 'cable', name: cabName || (language === 'en' ? 'New Cable' : 'Neues Kabel') })}
                     className="btn-primary"
                     style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
                   >
-                    Verknüpfen
+                    {t('link', 'Verknüpfen')}
                   </button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -2996,11 +2996,11 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('add_photo_label', 'Foto beschreiben & hinzufügen')}</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
                       <input 
                         type="text" 
-                        placeholder="Beschreibung (optional, z.B. Stecker 1)" 
+                        placeholder={t('photo_desc_placeholder', 'Beschreibung (optional, z.B. Stecker 1)')} 
                         value={tempCabImageLabel} 
                         onChange={e => setTempCabImageLabel(e.target.value)} 
                         style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
@@ -3011,7 +3011,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
                         }} style={{ display: 'none' }} id="cab-cam-upload" />
                         <label htmlFor="cab-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
-                          📷 Kamera
+                          📷 {t('camera', 'Kamera')}
                         </label>
 
                         <input type="file" accept="image/*" onChange={e => {
@@ -3019,7 +3019,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
                         }} style={{ display: 'none' }} id="cab-gal-upload" />
                         <label htmlFor="cab-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
-                          🖼️ Galerie
+                          🖼️ {t('gallery', 'Galerie')}
                         </label>
                       </div>
                     </div>
@@ -3049,16 +3049,16 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     ))}
                   </div>
                 )}
-                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('compression_running', 'Kompression läuft...')}</div>}
               </div>
             )}
 
-            <button type="submit" className="btn-primary" onClick={() => setCabIsMulti(false)}>Kabel anlegen</button>
+            <button type="submit" className="btn-primary" onClick={() => setCabIsMulti(false)}>{t('add_cable', 'Kabel anlegen')}</button>
           </form>
 
           {/* List Cables */}
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
-            <h3>Kabel</h3>
+            <h3>{t('cables', 'Kabel')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
               {cables.filter(c => !c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0)).map(c => (
                 <div 
@@ -3333,13 +3333,13 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Buttons für einklappbare Optionen */}
             <div style={{ display: 'flex', gap: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', flexWrap: 'wrap' }}>
               {[
-                { id: 'brand', label: 'Marke' },
-                { id: 'length', label: 'Kabellänge' },
-                { id: 'color', label: 'Farbe' },
-                { id: 'condition', label: 'Zustand' },
-                { id: 'material', label: 'Material' },
-                { id: 'dataRate', label: 'Datenrate' },
-                { id: 'chargingPower', label: 'Leistung' },
+                { id: 'brand', label: t('brand', 'Marke') },
+                { id: 'length', label: t('length', 'Kabellänge') },
+                { id: 'color', label: t('color', 'Farbe') },
+                { id: 'condition', label: t('condition', 'Zustand') },
+                { id: 'material', label: t('material', 'Material') },
+                { id: 'dataRate', label: t('data_rate', 'Datenrate') },
+                { id: 'chargingPower', label: t('charging_power', 'Leistung') },
               ].filter(prop => propertyAssignments[prop.id]?.includes('charger') && !expandedChargerProps[prop.id]).map(prop => (
                 <button key={prop.id} type="button" onClick={() => setExpandedChargerProps(p => ({ ...p, [prop.id]: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
                   + {prop.label}
@@ -3355,14 +3355,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 onClick={() => setShowChargerLoc(!showChargerLoc)} 
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
               >
-                {cabLocation ? `Lagerort: ${locations.find(l => l.id === cabLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+                {cabLocation ? `${t('location', 'Lagerort')}: ${locations.find(l => l.id === cabLocation)?.name || (language === 'en' ? 'Selected' : 'Gewählt')}` : `+ ${t('location', 'Lagerort')}`}
               </button>
               <button 
                 type="button" 
                 onClick={() => setShowChargerPhotos(!showChargerPhotos)} 
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
               >
-                {cabImages.length > 0 ? `Fotos (${cabImages.length})` : '+ Foto'}
+                {cabImages.length > 0 ? `${t('photos', 'Fotos')} (${cabImages.length})` : `+ ${t('photo', 'Foto')}`}
               </button>
               {!showCabLinks && (
                 <button 
@@ -3370,7 +3370,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   onClick={() => setShowCabLinks(true)} 
                   style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
                 >
-                  + Verknüpfung
+                  + {t('link', 'Verknüpfung')}
                 </button>
               )}
             </div>
@@ -3588,7 +3588,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Anschlüsse */}
             <div style={{ display: 'grid', gridTemplateColumns: showDevPort2 ? '1fr 1fr' : '1fr', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Anschluss (Port 1)</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_port_1', 'Anschluss (Port 1)')}</label>
                 <select value={devConnector} onChange={e => setDevConnector(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
                   <option value="USB-C">USB-C</option>
                   <option value="USB-A">USB-A</option>
@@ -3596,22 +3596,22 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <option value="Lightning">Lightning</option>
                   <option value="DC">DC</option>
                   <option value="DC-Jack">DC-Jack</option>
-                  <option value="Other">Andere</option>
+                  <option value="Other">{language === 'en' ? 'Other' : 'Andere'}</option>
                 </select>
               </div>
               {showDevPort2 && (
                 <div>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Anschluss (Port 2)</label>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_port_2', 'Anschluss (Port 2)')}</label>
                   <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                     <select value={devConnector2} onChange={e => setDevConnector2(e.target.value)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      <option value="">-- Keiner --</option>
+                      <option value="">-- {language === 'en' ? 'None' : 'Keiner'} --</option>
                       <option value="USB-C">USB-C</option>
                       <option value="USB-A">USB-A</option>
                       <option value="Micro-USB">Micro-USB</option>
                       <option value="Lightning">Lightning</option>
                       <option value="DC">DC</option>
                       <option value="DC-Jack">DC-Jack</option>
-                      <option value="Other">Andere</option>
+                      <option value="Other">{language === 'en' ? 'Other' : 'Andere'}</option>
                     </select>
                     <button type="button" onClick={() => { setShowDevPort2(false); setDevConnector2(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                   </div>
@@ -3622,13 +3622,13 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Dynamische Eigenschaften basierend auf Zuordnung */}
             {(() => {
               const assignedPropsList = [
-                { id: 'brand', label: 'Hersteller', list: brands, setList: setBrands, key: 'list_brands', val: devBrand, setVal: setDevBrand },
-                { id: 'length', label: 'Kabellänge', list: lengths, setList: setLengths, key: 'list_lengths', val: '', setVal: () => {} },
-                { id: 'color', label: 'Farbe', list: colors, setList: setColors, key: 'list_colors', val: devCustomPropValues['color'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, color: v })) },
-                { id: 'condition', label: 'Zustand', list: conditions, setList: setConditions, key: 'list_conditions', val: devCustomPropValues['condition'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, condition: v })) },
-                { id: 'material', label: 'Material', list: materials, setList: setMaterials, key: 'list_materials', val: devCustomPropValues['material'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, material: v })) },
-                { id: 'dataRate', label: 'Datenrate', list: dataRates, setList: setDataRates, key: 'list_data_rates', val: devCustomPropValues['dataRate'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, dataRate: v })) },
-                { id: 'chargingPower', label: 'Leistung', list: chargingPowers, setList: setChargingPowers, key: 'list_charging_powers', val: devCustomPropValues['chargingPower'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, chargingPower: v })) },
+                { id: 'brand', label: t('manufacturer', 'Hersteller'), list: brands, setList: setBrands, key: 'list_brands', val: devBrand, setVal: setDevBrand },
+                { id: 'length', label: t('length', 'Kabellänge'), list: lengths, setList: setLengths, key: 'list_lengths', val: '', setVal: () => {} },
+                { id: 'color', label: t('color', 'Farbe'), list: colors, setList: setColors, key: 'list_colors', val: devCustomPropValues['color'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, color: v })) },
+                { id: 'condition', label: t('condition', 'Zustand'), list: conditions, setList: setConditions, key: 'list_conditions', val: devCustomPropValues['condition'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, condition: v })) },
+                { id: 'material', label: t('material', 'Material'), list: materials, setList: setMaterials, key: 'list_materials', val: devCustomPropValues['material'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, material: v })) },
+                { id: 'dataRate', label: t('data_rate', 'Datenrate'), list: dataRates, setList: setDataRates, key: 'list_data_rates', val: devCustomPropValues['dataRate'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, dataRate: v })) },
+                { id: 'chargingPower', label: t('charging_power', 'Leistung'), list: chargingPowers, setList: setChargingPowers, key: 'list_charging_powers', val: devCustomPropValues['chargingPower'] || '', setVal: (v: string) => setDevCustomPropValues(prev => ({ ...prev, chargingPower: v })) },
               ];
 
               const activeStandardProps = assignedPropsList.filter(p => propertyAssignments[p.id]?.includes('device') && p.id !== 'brand');
@@ -3642,12 +3642,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   {/* Brand / Hersteller */}
                   {propertyAssignments['brand']?.includes('device') && expandedDevProps.brand && (
                     <div>
-                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Hersteller</label>
+                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('manufacturer', 'Hersteller')}</label>
                       <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                        <select value={devBrand} onChange={e => handleSelectChange('Hersteller', e.target.value, brands, setBrands, 'list_brands', setDevBrand)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                          <option value="">-- Keine Angabe --</option>
+                        <select value={devBrand} onChange={e => handleSelectChange(t('manufacturer', 'Hersteller'), e.target.value, brands, setBrands, 'list_brands', setDevBrand)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                          <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
                           {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                         </select>
                         <button type="button" onClick={() => { setExpandedDevProps(p => ({ ...p, brand: false })); setDevBrand(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                       </div>
@@ -3662,9 +3662,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                           <select value={prop.val} onChange={e => handleSelectChange(prop.label, e.target.value, prop.list, prop.setList, prop.key, prop.setVal)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                            <option value="">-- Keine Angabe --</option>
+                            <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
                             {prop.list.map(x => <option key={x} value={x}>{x}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                           </select>
                           <button type="button" onClick={() => { setExpandedDevProps(p => ({ ...p, [prop.id]: false })); prop.setVal(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                         </div>
@@ -3701,9 +3701,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                             )}
                             style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                           >
-                            <option value="">-- Keine Angabe --</option>
+                            <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
                             {prop.values.map(v => <option key={v} value={v}>{v}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                           </select>
                           <button type="button" onClick={() => { setExpandedDevProps(p => ({ ...p, [prop.id]: false })); setDevCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                         </div>
@@ -3718,21 +3718,21 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <div style={{ display: 'flex', gap: '0.75rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', flexWrap: 'wrap' }}>
               {!showDevPort2 && (
                 <button type="button" onClick={() => setShowDevPort2(true)} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Port
+                  + {t('port', 'Port')}
                 </button>
               )}
               {propertyAssignments.brand?.includes('device') && !expandedDevProps.brand && (
                 <button type="button" onClick={() => setExpandedDevProps(p => ({ ...p, brand: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
-                  + Hersteller
+                  + {t('manufacturer', 'Hersteller')}
                 </button>
               )}
               {[
-                { id: 'length', label: 'Kabellänge' },
-                { id: 'color', label: 'Farbe' },
-                { id: 'condition', label: 'Zustand' },
-                { id: 'material', label: 'Material' },
-                { id: 'dataRate', label: 'Datenrate' },
-                { id: 'chargingPower', label: 'Leistung' },
+                { id: 'length', label: t('length', 'Kabellänge') },
+                { id: 'color', label: t('color', 'Farbe') },
+                { id: 'condition', label: t('condition', 'Zustand') },
+                { id: 'material', label: t('material', 'Material') },
+                { id: 'dataRate', label: t('data_rate', 'Datenrate') },
+                { id: 'chargingPower', label: t('charging_power', 'Leistung') },
               ].filter(prop => propertyAssignments[prop.id]?.includes('device') && !expandedDevProps[prop.id]).map(prop => (
                 <button key={prop.id} type="button" onClick={() => setExpandedDevProps(p => ({ ...p, [prop.id]: true }))} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
                   + {prop.label}
@@ -3748,14 +3748,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 onClick={() => setShowDevLoc(!showDevLoc)} 
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
               >
-                {devLocation ? `Lagerort: ${locations.find(l => l.id === devLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+                {devLocation ? `${t('location', 'Lagerort')}: ${locations.find(l => l.id === devLocation)?.name || (language === 'en' ? 'Selected' : 'Gewählt')}` : `+ ${t('location', 'Lagerort')}`}
               </button>
               <button 
                 type="button" 
                 onClick={() => setShowDevPhotos(!showDevPhotos)} 
                 style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
               >
-                {devImages.length > 0 ? `Fotos (${devImages.length})` : '+ Foto'}
+                {devImages.length > 0 ? `${t('photos', 'Fotos')} (${devImages.length})` : `+ ${t('photo', 'Foto')}`}
               </button>
               {!showDevLinks && (
                 <button 
@@ -3763,7 +3763,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   onClick={() => setShowDevLinks(true)} 
                   style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
                 >
-                  + Verknüpfung
+                  + {t('link', 'Verknüpfung')}
                 </button>
               )}
             </div>
@@ -3772,20 +3772,20 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {showDevLinks && (
               <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Verknüpfte Komponenten:</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('linked_components', 'Verknüpfte Komponenten')}:</span>
                   <button 
                     type="button"
-                    onClick={() => setLinkingSource({ id: 'form_device', type: 'device', name: devName || 'Neues Gerät' })}
+                    onClick={() => setLinkingSource({ id: 'form_device', type: 'device', name: devName || (language === 'en' ? 'New Device' : 'Neues Gerät') })}
                     className="btn-primary"
                     style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
                   >
-                    Verknüpfen
+                    {t('link', 'Verknüpfen')}
                   </button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {devFormLinks.map(linkedId => {
                     const cab = cables.find(c => c.id === linkedId);
-                    const name = cab ? `${cab.isMultiOutput ? '🔌' : '🔌'} ${cab.name} (${cab.isMultiOutput ? 'Ladegerät' : 'Kabel'})` : linkedId;
+                    const name = cab ? `${cab.isMultiOutput ? '🔌' : '🔌'} ${cab.name} (${cab.isMultiOutput ? t('chargers', 'Ladegerät') : t('cables', 'Kabel')})` : linkedId;
                     return (
                       <div key={linkedId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
                         <span>{name}</span>
@@ -3793,7 +3793,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       </div>
                     );
                   })}
-                  {devFormLinks.length === 0 && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Keine Verknüpfungen vorhanden.</span>}
+                  {devFormLinks.length === 0 && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('no_links', 'Keine Verknüpfungen vorhanden.')}</span>}
                 </div>
               </div>
             )}
@@ -3801,7 +3801,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Hierarchische Lagerort-Auswahl für Geräte */}
             {showDevLoc && (
               <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                {renderLocationTreeSelector(devLocParentId, setDevLocParentId, devLocation, setDevLocation, 'Lagerort')}
+                {renderLocationTreeSelector(devLocParentId, setDevLocParentId, devLocation, setDevLocation, t('location', 'Lagerort'))}
               </div>
             )}
 
@@ -3810,11 +3810,11 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('add_photo_label', 'Foto beschreiben & hinzufügen')}</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
                       <input 
                         type="text" 
-                        placeholder="Beschreibung (optional, z.B. Frontansicht)" 
+                        placeholder={t('photo_desc_placeholder', 'Beschreibung (optional, z.B. Frontansicht)')} 
                         value={tempDevImageLabel} 
                         onChange={e => setTempDevImageLabel(e.target.value)} 
                         style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
@@ -3825,7 +3825,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           if (file) handleImageAttachmentUpload('device', file, tempDevImageLabel);
                         }} style={{ display: 'none' }} id="dev-cam-upload" />
                         <label htmlFor="dev-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
-                          📷 Kamera
+                          📷 {t('camera', 'Kamera')}
                         </label>
 
                         <input type="file" accept="image/*" onChange={e => {
@@ -3833,7 +3833,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           if (file) handleImageAttachmentUpload('device', file, tempDevImageLabel);
                         }} style={{ display: 'none' }} id="dev-gal-upload" />
                         <label htmlFor="dev-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
-                          🖼️ Galerie
+                          🖼️ {t('gallery', 'Galerie')}
                         </label>
                       </div>
                     </div>
@@ -3863,19 +3863,19 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     ))}
                   </div>
                 )}
-                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('compression_running', 'Kompression läuft...')}</div>}
               </div>
             )}
 
-            <button type="submit" className="btn-primary">Hinzufügen</button>
+            <button type="submit" className="btn-primary">{t('add', 'Hinzufügen')}</button>
           </form>
 
           {/* List Devices */}
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
-            <h3>Geräte</h3>
+            <h3>{t('devices', 'Geräte')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
               {devices.length === 0 ? (
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Keine Geräte registriert.</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{t('no_devices', 'Keine Geräte registriert.')}</span>
               ) : (
                 devices.map(d => (
                   <div 
@@ -3913,7 +3913,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     </div>
 
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      Ort: {d.locationId ? buildLocationPath(d.locationId, locations) : 'Kein Ort'}
+                      {t('location', 'Ort')}: {d.locationId ? buildLocationPath(d.locationId, locations) : t('without_location', 'Kein Ort')}
                     </div>
 
                     {/* Chips für Eigenschaften */}
@@ -4000,7 +4000,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
                     <Globe size={18} style={{ color: 'var(--accent-primary)' }} />
-                    {t('language_setting', 'Sprache / Language')}
+                    {t('language_setting', 'Sprache')}
                   </span>
                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                     {language === 'de' ? '🇩🇪 Deutsch' : '🇬🇧 English'} &rarr;
@@ -4026,7 +4026,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {settingsView === 'language' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <h3>{t('language_setting', 'Sprache / Language')}</h3>
+                <h3>{t('language_setting', 'Sprache')}</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <button 
                     onClick={() => setLanguage('de')}
@@ -5797,21 +5797,22 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
       )}
 
       {/* LINKING MODAL */}
+      {/* MODAL: LINKING COMPONENTS */}
       {linkingSource && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(10px)', padding: '1rem' }}>
           <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.5rem', width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem' }}>
-              <h3 style={{ margin: 0 }}>Komponente verknüpfen</h3>
+              <h3 style={{ margin: 0 }}>{t('link_component', 'Komponente verknüpfen')}</h3>
               <button onClick={() => { setLinkingSource(null); setLinkingTargetCategory(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
             </div>
             
             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              Verknüpfung erstellen für: <strong>{linkingSource.name}</strong>
+              {language === 'en' ? 'Create link for:' : 'Verknüpfung erstellen für:'} <strong>{linkingSource.name}</strong>
             </div>
 
             {linkingTargetCategory === null ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Kategorie wählen:</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{language === 'en' ? 'Select category:' : 'Kategorie wählen:'}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {linkingSource.type !== 'cable' && (
                     <button 
@@ -5819,7 +5820,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       className="btn-primary" 
                       style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', padding: '0.75rem' }}
                     >
-                      🔌 Kabel
+                      🔌 {t('cables', 'Kabel')}
                     </button>
                   )}
                   {linkingSource.type !== 'charger' && (
@@ -5828,7 +5829,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       className="btn-primary" 
                       style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', padding: '0.75rem' }}
                     >
-                      🔌 Ladegerät
+                      🔌 {t('chargers', 'Ladegerät')}
                     </button>
                   )}
                   {linkingSource.type !== 'device' && (
@@ -5837,7 +5838,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       className="btn-primary" 
                       style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', padding: '0.75rem' }}
                     >
-                      📱 Gerät
+                      📱 {t('devices', 'Gerät')}
                     </button>
                   )}
                 </div>
@@ -5846,9 +5847,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>
-                    Wähle {linkingTargetCategory === 'device' ? 'Gerät' : linkingTargetCategory === 'charger' ? 'Ladegerät' : 'Kabel'}:
+                    {language === 'en' ? 'Select' : 'Wähle'} {linkingTargetCategory === 'device' ? t('devices', 'Gerät') : linkingTargetCategory === 'charger' ? t('chargers', 'Ladegerät') : t('cables', 'Kabel')}:
                   </span>
-                  <button onClick={() => setLinkingTargetCategory(null)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer' }}>Zurück</button>
+                  <button onClick={() => setLinkingTargetCategory(null)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer' }}>{t('back', 'Zurück')}</button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto', paddingRight: '0.25rem' }}>
@@ -5878,7 +5879,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     }
 
                     if (items.length === 0) {
-                      return <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>Keine verfügbaren Einträge vorhanden.</span>;
+                      return <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>{t('no_items_found', 'Keine verfügbaren Einträge vorhanden.')}</span>;
                     }
 
                     return items.map(item => (
@@ -5892,7 +5893,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         style={{ width: '100%', padding: '0.5rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}
                       >
                         <span>{item.name}</span>
-                        <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem' }}>Verknüpfen</span>
+                        <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem' }}>{t('link', 'Verknüpfen')}</span>
                       </button>
                     ));
                   })()}
@@ -5904,7 +5905,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               onClick={() => { setLinkingSource(null); setLinkingTargetCategory(null); }} 
               style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', marginTop: '0.5rem' }}
             >
-              Abbrechen
+              {t('cancel', 'Abbrechen')}
             </button>
           </div>
         </div>
