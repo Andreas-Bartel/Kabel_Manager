@@ -1541,6 +1541,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
   };
 
   const openCableDetails = (cable: Cable) => {
+    setSelectedDeviceDetails(null);
     setSelectedCableDetails(cable);
     setEditIsEditing(false);
     setEditName(cable.name);
@@ -1584,6 +1585,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
   };
 
   const openDeviceDetails = (device: Device) => {
+    setSelectedCableDetails(null);
     setSelectedDeviceDetails(device);
     setEditDevIsEditing(false);
     setEditName(device.name);
@@ -4810,8 +4812,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       const dev = devices.find(d => d.id === devId);
                       if (!dev) return null;
                       return (
-                        <div key={devId} style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
+                        <div 
+                          key={devId} 
+                          onClick={() => openDeviceDetails(dev)}
+                          title={language === 'en' ? 'Click to open details' : 'Klicken um Details zu öffnen'}
+                          style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                        >
                           <span>📱 {dev.name} ({t('devices', 'Gerät')})</span>
+                          <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 'bold' }}>&rarr;</span>
                         </div>
                       );
                     })}
@@ -4820,8 +4828,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       if (!cab) return null;
                       const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
                       return (
-                        <div key={cabId} style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
+                        <div 
+                          key={cabId} 
+                          onClick={() => openCableDetails(cab)}
+                          title={language === 'en' ? 'Click to open details' : 'Klicken um Details zu öffnen'}
+                          style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                        >
                           <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? t('chargers', 'Ladegerät') : t('cables', 'Kabel')})</span>
+                          <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 'bold' }}>&rarr;</span>
                         </div>
                       );
                     })}
@@ -5535,8 +5549,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       if (!cab) return null;
                       const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
                       return (
-                        <div key={cabId} style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
+                        <div 
+                          key={cabId} 
+                          onClick={() => openCableDetails(cab)}
+                          title={language === 'en' ? 'Click to open details' : 'Klicken um Details zu öffnen'}
+                          style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                        >
                           <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? t('chargers', 'Ladegerät') : t('cables', 'Kabel')})</span>
+                          <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 'bold' }}>&rarr;</span>
                         </div>
                       );
                     })}
