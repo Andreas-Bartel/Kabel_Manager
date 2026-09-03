@@ -207,66 +207,125 @@ export default function App() {
 
   // Option lists for Cable attributes
   const [cableStandardGroups, setCableStandardGroups] = useState<Record<string, string[]>>(() => {
-    const saved = localStorage.getItem('list_cable_standards_grouped');
-    return saved ? JSON.parse(saved) : {
-      usb: ['USB 2.0', 'USB 3.0', 'USB 3.1', 'USB 3.2', 'USB4', 'Kein USB-Standard'],
-      hdmi: ['HDMI 1.4', 'HDMI 2.0', 'HDMI 2.1', 'HDMI 2.1a'],
-      displayport: ['DP 1.2', 'DP 1.4', 'DP 2.0', 'DP 2.1'],
-      lightning: ['Lightning MFi-Zertifiziert'],
-      other: ['Kein Standard / Spezifisch']
-    };
+    try {
+      const saved = localStorage.getItem('list_cable_standards_grouped');
+      return saved ? JSON.parse(saved) : {
+        usb: ['USB 2.0', 'USB 3.0', 'USB 3.1', 'USB 3.2', 'USB4', 'Kein USB-Standard'],
+        hdmi: ['HDMI 1.4', 'HDMI 2.0', 'HDMI 2.1', 'HDMI 2.1a'],
+        displayport: ['DP 1.2', 'DP 1.4', 'DP 2.0', 'DP 2.1'],
+        lightning: ['Lightning MFi-Zertifiziert'],
+        other: ['Kein Standard / Spezifisch']
+      };
+    } catch {
+      return {
+        usb: ['USB 2.0', 'USB 3.0', 'USB 3.1', 'USB 3.2', 'USB4', 'Kein USB-Standard'],
+        hdmi: ['HDMI 1.4', 'HDMI 2.0', 'HDMI 2.1', 'HDMI 2.1a'],
+        displayport: ['DP 1.2', 'DP 1.4', 'DP 2.0', 'DP 2.1'],
+        lightning: ['Lightning MFi-Zertifiziert'],
+        other: ['Kein Standard / Spezifisch']
+      };
+    }
   });
   const [lengths, setLengths] = useState<string[]>(() => {
-    const saved = localStorage.getItem('list_lengths');
-    return saved ? JSON.parse(saved) : ['0.25m', '0.5m', '1m', '1.5m', '2m', '3m', '5m'];
+    try {
+      const saved = localStorage.getItem('list_lengths');
+      return saved ? JSON.parse(saved) : ['0.25m', '0.5m', '1m', '1.5m', '2m', '3m', '5m'];
+    } catch {
+      return ['0.25m', '0.5m', '1m', '1.5m', '2m', '3m', '5m'];
+    }
   });
   const [colors, setColors] = useState<string[]>(() => {
-    const saved = localStorage.getItem('list_colors');
-    return saved ? JSON.parse(saved) : ['Schwarz', 'Weiß', 'Grau', 'Blau', 'Rot', 'Grün', 'Silber', 'Gold'];
+    try {
+      const saved = localStorage.getItem('list_colors');
+      return saved ? JSON.parse(saved) : ['Schwarz', 'Weiß', 'Grau', 'Blau', 'Rot', 'Grün', 'Silber', 'Gold'];
+    } catch {
+      return ['Schwarz', 'Weiß', 'Grau', 'Blau', 'Rot', 'Grün', 'Silber', 'Gold'];
+    }
   });
   const [conditions, setConditions] = useState<string[]>(() => {
-    const saved = localStorage.getItem('list_conditions');
-    return saved ? JSON.parse(saved) : ['Neu', 'Sehr gut', 'Gebraucht', 'Defekt'];
+    try {
+      const saved = localStorage.getItem('list_conditions');
+      return saved ? JSON.parse(saved) : ['Neu', 'Sehr gut', 'Gebraucht', 'Defekt'];
+    } catch {
+      return ['Neu', 'Sehr gut', 'Gebraucht', 'Defekt'];
+    }
   });
   const [materials, setMaterials] = useState<string[]>(() => {
-    const saved = localStorage.getItem('list_materials');
-    return saved ? JSON.parse(saved) : ['Kunststoff', 'Nylon geflochten', 'Gummi', 'Textil'];
+    try {
+      const saved = localStorage.getItem('list_materials');
+      return saved ? JSON.parse(saved) : ['Kunststoff', 'Nylon geflochten', 'Gummi', 'Textil'];
+    } catch {
+      return ['Kunststoff', 'Nylon geflochten', 'Gummi', 'Textil'];
+    }
   });
   const [dataRates, setDataRates] = useState<string[]>(() => {
-    const saved = localStorage.getItem('list_data_rates');
-    return saved ? JSON.parse(saved) : ['480 Mbps', '5 Gbps', '10 Gbps', '20 Gbps', '40 Gbps', 'Nur Laden'];
+    try {
+      const saved = localStorage.getItem('list_data_rates');
+      return saved ? JSON.parse(saved) : ['480 Mbps', '5 Gbps', '10 Gbps', '20 Gbps', '40 Gbps', 'Nur Laden'];
+    } catch {
+      return ['480 Mbps', '5 Gbps', '10 Gbps', '20 Gbps', '40 Gbps', 'Nur Laden'];
+    }
   });
   const [chargingPowers, setChargingPowers] = useState<string[]>(() => {
-    const saved = localStorage.getItem('list_charging_powers');
-    return saved ? JSON.parse(saved) : ['15W', '60W', '100W', '240W', 'Keine'];
+    try {
+      const saved = localStorage.getItem('list_charging_powers');
+      return saved ? JSON.parse(saved) : ['15W', '60W', '100W', '240W', 'Keine'];
+    } catch {
+      return ['15W', '60W', '100W', '240W', 'Keine'];
+    }
   });
   const [brands, setBrands] = useState<string[]>(() => {
-    const saved = localStorage.getItem('list_brands');
-    return saved ? JSON.parse(saved) : ['Belkin', 'Anker', 'Apple', 'Samsung', 'Ugreen', 'Generisch'];
+    try {
+      const saved = localStorage.getItem('list_brands');
+      return saved ? JSON.parse(saved) : ['Belkin', 'Anker', 'Apple', 'Samsung', 'Ugreen', 'Generisch'];
+    } catch {
+      return ['Belkin', 'Anker', 'Apple', 'Samsung', 'Ugreen', 'Generisch'];
+    }
   });
   const [connectors, setConnectors] = useState<string[]>(() => {
-    const saved = localStorage.getItem('list_connectors');
-    return saved ? JSON.parse(saved) : ['USB-C', 'USB-A', 'Micro-USB', 'Lightning', 'HDMI', 'DisplayPort', 'DC-Jack', 'Klinke (3.5mm)'];
+    try {
+      const saved = localStorage.getItem('list_connectors');
+      return saved ? JSON.parse(saved) : ['USB-C', 'USB-A', 'Micro-USB', 'Lightning', 'HDMI', 'DisplayPort', 'DC-Jack', 'Klinke (3.5mm)'];
+    } catch {
+      return ['USB-C', 'USB-A', 'Micro-USB', 'Lightning', 'HDMI', 'DisplayPort', 'DC-Jack', 'Klinke (3.5mm)'];
+    }
   });
 
   // Custom properties definitions
   const [customProperties, setCustomProperties] = useState<{ id: string; label: string; values: string[] }[]>(() => {
-    const saved = localStorage.getItem('list_custom_properties');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('list_custom_properties');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   const [propertyAssignments, setPropertyAssignments] = useState<Record<string, ('cable' | 'charger' | 'device')[]>>(() => {
-    const saved = localStorage.getItem('property_assignments');
-    return saved ? JSON.parse(saved) : {
-      brand: ['cable', 'device'],
-      length: ['cable'],
-      color: ['cable'],
-      condition: ['cable'],
-      material: ['cable'],
-      dataRate: ['cable'],
-      chargingPower: ['cable'],
-      connectors: ['cable', 'charger', 'device']
-    };
+    try {
+      const saved = localStorage.getItem('property_assignments');
+      return saved ? JSON.parse(saved) : {
+        brand: ['cable', 'device'],
+        length: ['cable'],
+        color: ['cable'],
+        condition: ['cable'],
+        material: ['cable'],
+        dataRate: ['cable'],
+        chargingPower: ['cable'],
+        connectors: ['cable', 'charger', 'device']
+      };
+    } catch {
+      return {
+        brand: ['cable', 'device'],
+        length: ['cable'],
+        color: ['cable'],
+        condition: ['cable'],
+        material: ['cable'],
+        dataRate: ['cable'],
+        chargingPower: ['cable'],
+        connectors: ['cable', 'charger', 'device']
+      };
+    }
   });
 
   const [propsActiveComponent, setPropsActiveComponent] = useState<'cable' | 'charger' | 'device'>('cable');
