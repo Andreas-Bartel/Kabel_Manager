@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer, Settings, ArrowLeft, Home, Folder, Plug, Zap } from 'lucide-react';
+import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer, Settings, ArrowLeft, Home, Folder, Plug, Zap, Globe } from 'lucide-react';
 import Fuse from 'fuse.js';
+import { useLanguage } from './contexts/i18n/application/LanguageContext';
 import { Cable, Device, StorageLocation, buildLocationPath, checkPowerCompatibility, CompatibilityResult, ImageAttachment, PowerOutput } from './contexts/inventory/domain/types';
 import { LocalStorageCableRepository } from './contexts/inventory/infrastructure/LocalStorageCableRepository';
 import { LocalStorageDeviceRepository } from './contexts/inventory/infrastructure/LocalStorageDeviceRepository';
@@ -50,6 +51,7 @@ const generateUUID = () => {
 const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 export default function App() {
+  const { language, setLanguage, t } = useLanguage();
   // State
   const [cables, setCables] = useState<Cable[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -192,7 +194,7 @@ export default function App() {
   const [tempDevImageLabel, setTempDevImageLabel] = useState('');
   const [cabLocParentId, setCabLocParentId] = useState<string | undefined>(undefined);
   const [devLocParentId, setDevLocParentId] = useState<string | undefined>(undefined);
-  const [settingsView, setSettingsView] = useState<'menu' | 'layout' | 'properties' | 'export' | 'about'>('menu');
+  const [settingsView, setSettingsView] = useState<'menu' | 'layout' | 'properties' | 'export' | 'about' | 'language'>('menu');
   const [selectedPropToAssign, setSelectedPropToAssign] = useState('');
 
   // Setze den Einstellungs-Tab bei Wechsel zurück auf das Hauptmenü
@@ -1670,7 +1672,7 @@ export default function App() {
             e.currentTarget.style.borderColor = 'var(--border-glass)';
           }}
         >
-          <ArrowLeft size={16} /> Zurück
+          <ArrowLeft size={16} /> {t('back', 'Zurück')}
         </button>
       )}
 
@@ -1680,7 +1682,7 @@ export default function App() {
           <Search size={20} style={{ color: 'var(--text-muted)' }} />
           <input
             type="text"
-            placeholder="Suchen..."
+            placeholder={t('search_placeholder', 'Suchen...')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -1861,7 +1863,7 @@ export default function App() {
               </svg>
             </div>
             <div style={{ textAlign: 'left' }}>
-              <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-primary)', display: 'block' }}>Inventar</span>
+              <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-primary)', display: 'block' }}>{t('inventory', 'Inventar')}</span>
             </div>
           </div>
 
@@ -1906,7 +1908,7 @@ export default function App() {
                 </span>
               )}
               <img src="/icons/cables.png" alt="Kabel" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Kabel</span>
+              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>{t('cables', 'Kabel')}</span>
             </div>
 
             {/* Tile 2: Ladegeräte */}
@@ -1949,7 +1951,7 @@ export default function App() {
                 </span>
               )}
               <img src="/icons/chargers.png" alt="Ladegeräte" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Ladegeräte</span>
+              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>{t('chargers', 'Ladegeräte')}</span>
             </div>
 
             {/* Tile 3: Geräte */}
@@ -1992,7 +1994,7 @@ export default function App() {
                 </span>
               )}
               <img src="/icons/devices.png" alt="Geräte" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Geräte</span>
+              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>{t('devices', 'Geräte')}</span>
             </div>
 
             {/* Tile 4: Lagerorte */}
@@ -2012,7 +2014,7 @@ export default function App() {
               }}
             >
               <img src="/icons/locations.png" alt="Lagerorte" style={{ width: '84px', height: '84px', objectFit: 'contain', filter: 'var(--icon-filter)' }} />
-              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>Lagerorte</span>
+              <span style={{ fontWeight: 600, fontSize: '1.4rem' }}>{t('locations', 'Lagerorte')}</span>
             </div>
           </div>
         </div>
@@ -2640,7 +2642,7 @@ export default function App() {
       {activeTab === 'locations' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateLocation} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3>Lagerort anlegen</h3>
+            <h3>{t('add_location', 'Lagerort anlegen')}</h3>
             <input type="text" placeholder="Name" value={locName} onChange={e => setLocName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
             <select value={locParent} onChange={e => setLocParent(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
               <option value="">-- Kein übergeordneter Ort --</option>
@@ -2653,7 +2655,7 @@ export default function App() {
           </form>
 
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
-            <h3>Lagerorte</h3>
+            <h3>{t('locations', 'Lagerorte')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
               {locations.length === 0 ? (
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Keine Lagerorte angelegt.</span>
@@ -2669,7 +2671,7 @@ export default function App() {
       {activeTab === 'cables' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateCable} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3>Kabel anlegen</h3>
+            <h3>{t('add_cable', 'Kabel anlegen')}</h3>
             
             {/* Haupteigenschaften */}
             <div>
@@ -3557,7 +3559,7 @@ export default function App() {
       {activeTab === 'devices' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateDevice} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h3>Gerät anlegen</h3>
+            <h3>{t('add_device', 'Gerät anlegen')}</h3>
             <input type="text" placeholder="Name" value={devName} onChange={e => setDevName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
             {/* Anschlüsse */}
             <div style={{ display: 'grid', gridTemplateColumns: showDevPort2 ? '1fr 1fr' : '1fr', gap: '1rem' }}>
@@ -3970,6 +3972,20 @@ export default function App() {
                 </button>
 
                 <button 
+                  onClick={() => setSettingsView('language')}
+                  className="tile-btn"
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
+                    <Globe size={18} style={{ color: 'var(--accent-primary)' }} />
+                    {t('language_setting', 'Sprache / Language')}
+                  </span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    {language === 'de' ? '🇩🇪 Deutsch' : '🇬🇧 English'} &rarr;
+                  </span>
+                </button>
+
+                <button 
                   onClick={() => setSettingsView('about')}
                   className="tile-btn"
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
@@ -3980,6 +3996,34 @@ export default function App() {
                   </span>
                   <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* SUB-VIEW: LANGUAGE */}
+          {settingsView === 'language' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <h3>{t('language_setting', 'Sprache / Language')}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <button 
+                    onClick={() => setLanguage('de')}
+                    className="tile-btn"
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: language === 'de' ? 'var(--accent-gradient)' : 'var(--bg-secondary)', border: language === 'de' ? 'none' : '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: language === 'de' ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    <span>🇩🇪 Deutsch</span>
+                    {language === 'de' && <span>✓</span>}
+                  </button>
+
+                  <button 
+                    onClick={() => setLanguage('en')}
+                    className="tile-btn"
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: language === 'en' ? 'var(--accent-gradient)' : 'var(--bg-secondary)', border: language === 'en' ? 'none' : '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: language === 'en' ? 'white' : 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+                  >
+                    <span>🇬🇧 English</span>
+                    {language === 'en' && <span>✓</span>}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -4372,7 +4416,7 @@ export default function App() {
                 <button type="button" onClick={() => setSelectedCableDetails(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
                   <ArrowLeft size={24} />
                 </button>
-                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>{selectedCableDetails.isMultiOutput ? 'Ladegerät Details' : 'Kabel Details'}</h2>
+                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>{selectedCableDetails.isMultiOutput ? t('charger_details', 'Ladegerät Details') : t('cable_details', 'Kabel Details')}</h2>
               </div>
 
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
@@ -4557,7 +4601,7 @@ export default function App() {
                 <button type="button" onClick={() => setEditIsEditing(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
                   <ArrowLeft size={24} />
                 </button>
-                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>{editIsMulti ? 'Ladegerät bearbeiten' : 'Kabel bearbeiten'}</h2>
+                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>{editIsMulti ? t('edit_charger', 'Ladegerät bearbeiten') : t('edit_cable', 'Kabel bearbeiten')}</h2>
               </div>
 
               <form onSubmit={handleSaveCableEdit} style={{ background: 'var(--bg-primary)', border: 'none', borderRadius: 0, padding: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
@@ -5113,7 +5157,7 @@ export default function App() {
                 <button type="button" onClick={() => setSelectedDeviceDetails(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
                   <ArrowLeft size={24} />
                 </button>
-                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>Gerät Details</h2>
+                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>{t('device_details', 'Gerät Details')}</h2>
               </div>
 
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
@@ -5249,7 +5293,7 @@ export default function App() {
                 <button type="button" onClick={() => setEditDevIsEditing(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0 }}>
                   <ArrowLeft size={24} />
                 </button>
-                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>Gerät bearbeiten</h2>
+                <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>{t('edit_device', 'Gerät bearbeiten')}</h2>
               </div>
 
               <form onSubmit={handleSaveDeviceEdit} style={{ background: 'var(--bg-primary)', border: 'none', borderRadius: 0, padding: '1rem', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
