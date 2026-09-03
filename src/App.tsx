@@ -3330,7 +3330,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   </div>
 
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    {t('location', 'Ort')}: {c.locationId ? buildLocationPath(c.locationId, locations) : t('without_location', 'Kein Ort')}
+                    {t('location_colon', 'Ort:')} {c.locationId ? buildLocationPath(c.locationId, locations) : t('no_location', 'Kein Ort')}
                   </div>
 
                   {/* Chips für Eigenschaften */}
@@ -3750,14 +3750,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   </div>
 
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
+                    {t('location_colon', 'Ort:')} {c.locationId ? buildLocationPath(c.locationId, locations) : t('no_location', 'Kein Ort')}
                   </div>
 
                   {/* Chips für Eigenschaften */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
                     {/* Ladegerät-Typ als Eigenschaft */}
                     <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
-                      🔌 {c.chargerType === 'only_fixed_cable' ? 'Kabel-Netzteil' : c.chargerType === 'hybrid' ? 'Hybrid-Lader' : 'Port-Lader'}
+                      🔌 {c.chargerType === 'only_fixed_cable' ? (language === 'en' ? 'Cable Charger' : 'Kabel-Netzteil') : c.chargerType === 'hybrid' ? (language === 'en' ? 'Hybrid Charger' : 'Hybrid-Lader') : (language === 'en' ? 'Port Charger' : 'Port-Lader')}
                     </span>
                     {/* Hersteller als Eigenschaft */}
                     {c.brand && (
@@ -3789,7 +3789,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     {(c.chargerType === 'only_fixed_cable' || c.chargerType === 'hybrid' || c.fixedCableConnector) && (
                       <div style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-primary)' }}>
                         <span>🪢</span>
-                        <span>Festes Kabel: <strong>{c.fixedCableConnector || c.connectorType}</strong> ({c.fixedCableLength ? c.fixedCableLength : 'k.A.'}{c.fixedCablePower ? `, ${c.fixedCablePower}` : ''})</span>
+                        <span>{language === 'en' ? 'Fixed Cable:' : 'Festes Kabel:'} <strong>{c.fixedCableConnector || c.connectorType}</strong> ({c.fixedCableLength ? c.fixedCableLength : (language === 'en' ? 'N/A' : 'k.A.')}{c.fixedCablePower ? `, ${c.fixedCablePower}` : ''})</span>
                       </div>
                     )}
                     {/* Ports */}
@@ -4145,7 +4145,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     </div>
 
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      {t('location', 'Ort')}: {d.locationId ? buildLocationPath(d.locationId, locations) : t('without_location', 'Kein Ort')}
+                      {t('location_colon', 'Ort:')} {d.locationId ? buildLocationPath(d.locationId, locations) : t('no_location', 'Kein Ort')}
                     </div>
 
                     {/* Chips für Eigenschaften */}
