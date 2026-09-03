@@ -1080,6 +1080,64 @@ export default function App() {
     }
   };
 
+  const handleDirectCableImageUpload = async (file: File) => {
+    if (!selectedCableDetails) return;
+    try {
+      setIsCompressing(true);
+      const compressed = await compressImage(file);
+      const count = editImages.length;
+      const newImage: ImageAttachment = {
+        id: generateUUID(),
+        url: compressed,
+        label: `Foto ${count + 1}`
+      };
+      const updatedImages = [...editImages, newImage];
+      setEditImages(updatedImages);
+
+      const updatedCable: Cable = {
+        ...selectedCableDetails,
+        imageUrl: updatedImages[0]?.url,
+        images: updatedImages,
+        updatedAt: new Date().toISOString()
+      };
+      await cableRepo.saveCable(updatedCable);
+      setSelectedCableDetails(updatedCable);
+      await refreshData();
+    } catch (err) {
+      alert("Fehler beim Hochladen des Bildes.");
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  const handleDirectDeviceImageUpload = async (file: File) => {
+    if (!selectedDeviceDetails) return;
+    try {
+      setIsCompressing(true);
+      const compressed = await compressImage(file);
+      const count = editDevImages.length;
+      const newImage: ImageAttachment = {
+        id: generateUUID(),
+        url: compressed,
+        label: `Foto ${count + 1}`
+      };
+      const updatedImages = [...editDevImages, newImage];
+      setEditDevImages(updatedImages);
+
+      const updatedDevice: Device = {
+        ...selectedDeviceDetails,
+        images: updatedImages
+      };
+      await deviceRepo.saveDevice(updatedDevice);
+      setSelectedDeviceDetails(updatedDevice);
+      await refreshData();
+    } catch (err) {
+      alert("Fehler beim Hochladen des Bildes.");
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
   const handleRemoveImageAttachment = (context: 'cable' | 'device', id: string) => {
     if (context === 'cable') {
       setCabImages(prev => prev.filter(img => img.id !== id));
@@ -4553,8 +4611,22 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
                 {/* UPPER AREA: Image left, Name right */}
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <input type="file" accept="image/*" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) handleDirectCableImageUpload(file);
+                  }} style={{ display: 'none' }} id="detail-cab-dummy-upload" />
+
                   <div 
-                    onClick={() => { if (editImages.length > 0) { setGalleryImages(editImages); setGalleryIndex(0); } }}
+                    onClick={() => {
+                      if (editImages.length > 0) {
+                        setGalleryImages(editImages);
+                        setGalleryIndex(0);
+                      } else {
+                        const fileInput = document.getElementById('detail-cab-dummy-upload') as HTMLInputElement;
+                        if (fileInput) fileInput.click();
+                      }
+                    }}
+                    title={editImages.length > 0 ? (language === 'en' ? 'Click to enlarge' : 'Klicken zum Vergrößern') : (language === 'en' ? 'Click to add photo' : 'Klicken zum Foto hinzufügen')}
                     style={{ 
                       width: '100px', 
                       height: '100px', 
@@ -4565,7 +4637,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: editImages.length > 0 ? 'pointer' : 'default',
+                      cursor: 'pointer',
                       position: 'relative',
                       flexShrink: 0
                     }}
@@ -4738,7 +4810,17 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 {/* UPPER AREA: Image left, Name input right */}
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <div 
-                    onClick={() => { if (editImages.length > 0) { setGalleryImages(editImages); setGalleryIndex(0); } }}
+                    onClick={() => {
+                      if (editImages.length > 0) {
+                        setGalleryImages(editImages);
+                        setGalleryIndex(0);
+                      } else {
+                        setEditShowPhotos(true);
+                        const fileInput = document.getElementById('edit-cab-gal-upload') as HTMLInputElement;
+                        if (fileInput) fileInput.click();
+                      }
+                    }}
+                    title={editImages.length > 0 ? (language === 'en' ? 'Click to enlarge' : 'Klicken zum Vergrößern') : (language === 'en' ? 'Click to add photo' : 'Klicken zum Foto hinzufügen')}
                     style={{ 
                       width: '100px', 
                       height: '100px', 
@@ -4749,7 +4831,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: editImages.length > 0 ? 'pointer' : 'default',
+                      cursor: 'pointer',
                       position: 'relative',
                       flexShrink: 0
                     }}
@@ -5292,8 +5374,22 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
                 {/* UPPER AREA: Image left, Name right */}
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <input type="file" accept="image/*" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) handleDirectDeviceImageUpload(file);
+                  }} style={{ display: 'none' }} id="detail-dev-dummy-upload" />
+
                   <div 
-                    onClick={() => { if (editDevImages.length > 0) { setGalleryImages(editDevImages); setGalleryIndex(0); } }}
+                    onClick={() => {
+                      if (editDevImages.length > 0) {
+                        setGalleryImages(editDevImages);
+                        setGalleryIndex(0);
+                      } else {
+                        const fileInput = document.getElementById('detail-dev-dummy-upload') as HTMLInputElement;
+                        if (fileInput) fileInput.click();
+                      }
+                    }}
+                    title={editDevImages.length > 0 ? (language === 'en' ? 'Click to enlarge' : 'Klicken zum Vergrößern') : (language === 'en' ? 'Click to add photo' : 'Klicken zum Foto hinzufügen')}
                     style={{ 
                       width: '100px', 
                       height: '100px', 
@@ -5304,7 +5400,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: editDevImages.length > 0 ? 'pointer' : 'default',
+                      cursor: 'pointer',
                       position: 'relative',
                       flexShrink: 0
                     }}
@@ -5428,7 +5524,17 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 {/* UPPER AREA: Image left, Name input right */}
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <div 
-                    onClick={() => { if (editDevImages.length > 0) { setGalleryImages(editDevImages); setGalleryIndex(0); } }}
+                    onClick={() => {
+                      if (editDevImages.length > 0) {
+                        setGalleryImages(editDevImages);
+                        setGalleryIndex(0);
+                      } else {
+                        setEditShowPhotos(true);
+                        const fileInput = document.getElementById('edit-dev-gal-upload') as HTMLInputElement;
+                        if (fileInput) fileInput.click();
+                      }
+                    }}
+                    title={editDevImages.length > 0 ? (language === 'en' ? 'Click to enlarge' : 'Klicken zum Vergrößern') : (language === 'en' ? 'Click to add photo' : 'Klicken zum Foto hinzufügen')}
                     style={{ 
                       width: '100px', 
                       height: '100px', 
@@ -5439,7 +5545,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: editDevImages.length > 0 ? 'pointer' : 'default',
+                      cursor: 'pointer',
                       position: 'relative',
                       flexShrink: 0
                     }}
