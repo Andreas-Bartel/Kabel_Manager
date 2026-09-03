@@ -983,8 +983,33 @@ export default function App() {
     }
   };
 
+function generateNextDefaultName(prefix: string, existingNames: string[]): string {
+  const existingSet = new Set(existingNames.map(n => n ? n.trim().toLowerCase() : ''));
+  let counter = 1;
+  while (existingSet.has(`${prefix} ${counter}`.toLowerCase())) {
+    counter++;
+  }
+  return `${prefix} ${counter}`;
+}
+
   const handleCreateCable = async (e: React.FormEvent) => {
     e.preventDefault();
+    let finalName = cabName.trim();
+    if (!finalName) {
+      const prefix = cabIsMulti
+        ? (language === 'en' ? 'Charger' : 'Ladegerät')
+        : (language === 'en' ? 'Cable' : 'Kabel');
+      
+      const existingNames = cables
+        .filter(c => cabIsMulti 
+          ? (c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0))
+          : (!c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0))
+        )
+        .map(c => c.name);
+
+      finalName = generateNextDefaultName(prefix, existingNames);
+    }
+
     const powerOutputs = cabIsMulti && (cabChargerType === 'only_ports' || cabChargerType === 'hybrid')
       ? ports.map(p => ({
           wattage: p.wattage && p.wattage > 0 ? p.wattage : undefined,
@@ -1020,7 +1045,7 @@ export default function App() {
 
     const newCable: Cable = {
       id: newId,
-      name: cabName,
+      name: finalName,
       connectorType: cabIsMulti 
         ? (cabChargerType === 'only_ports' 
             ? (ports[0]?.portType as any || 'Other') 
@@ -1120,6 +1145,13 @@ export default function App() {
   // Actions - Device
   const handleCreateDevice = async (e: React.FormEvent) => {
     e.preventDefault();
+    let finalName = devName.trim();
+    if (!finalName) {
+      const prefix = language === 'en' ? 'Device' : 'Gerät';
+      const existingNames = devices.map(d => d.name);
+      finalName = generateNextDefaultName(prefix, existingNames);
+    }
+
     const newId = generateUUID();
     const compatibleCableIds: string[] = [];
     for (const linkedId of devFormLinks) {
@@ -1136,7 +1168,7 @@ export default function App() {
 
     const newDevice: Device = {
       id: newId,
-      name: devName,
+      name: finalName,
       manufacturer: devBrand || undefined,
       requiredConnectorType: devConnector,
       requiredConnectorType2: devConnector2 || undefined,
@@ -2676,7 +2708,7 @@ export default function App() {
             {/* Haupteigenschaften */}
             <div>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Name</label>
-              <input type="text" placeholder="Name" value={cabName} onChange={e => setCabName(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
+              <input type="text" placeholder={language === 'en' ? 'Name (optional, e.g. USB-C Cable)' : 'Name (optional, z.B. USB-C Kabel)'} value={cabName} onChange={e => setCabName(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
             </div>
 
             {/* Paar: Stecker 1 + Standard 1 */}
@@ -3118,7 +3150,7 @@ export default function App() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateCable} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3>Ladegerät anlegen</h3>
-            <input type="text" placeholder="Name (z.B. Anker 65W)" value={cabName} onChange={e => setCabName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
+            <input type="text" placeholder={language === 'en' ? 'Name (optional, e.g. Anker 65W)' : 'Name (optional, z.B. Anker 65W)'} value={cabName} onChange={e => setCabName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
             
             {/* Typ-Auswahl des Ladegeräts */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -3560,7 +3592,7 @@ export default function App() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <form onSubmit={handleCreateDevice} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3>{t('add_device', 'Gerät anlegen')}</h3>
-            <input type="text" placeholder="Name" value={devName} onChange={e => setDevName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
+            <input type="text" placeholder={language === 'en' ? 'Name (optional, e.g. iPad Pro)' : 'Name (optional, z.B. iPad Pro)'} value={devName} onChange={e => setDevName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
             {/* Anschlüsse */}
             <div style={{ display: 'grid', gridTemplateColumns: showDevPort2 ? '1fr 1fr' : '1fr', gap: '1rem' }}>
               <div>
