@@ -2006,7 +2006,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{c.name}</strong>
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    {t('location', 'Ort')}: {c.locationId ? buildLocationPath(c.locationId, locations) : t('without_location', 'Kein Ort')}
+                    {t('location_colon', 'Ort:')} {c.locationId ? buildLocationPath(c.locationId, locations) : t('no_location', 'Kein Ort')}
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
                     <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
@@ -2055,7 +2055,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)', wordBreak: 'break-word' }}>{d.name}</strong>
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  {t('location', 'Ort')}: {d.locationId ? buildLocationPath(d.locationId, locations) : t('without_location', 'Kein Ort')}
+                  {t('location_colon', 'Ort:')} {d.locationId ? buildLocationPath(d.locationId, locations) : t('no_location', 'Kein Ort')}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
                   <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
@@ -2682,7 +2682,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   </div>
 
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Ort: {c.locationId ? buildLocationPath(c.locationId, locations) : 'Kein Ort'}
+                    {t('location_colon', 'Ort:')} {c.locationId ? buildLocationPath(c.locationId, locations) : t('no_location', 'Kein Ort')}
                   </div>
 
                   {/* Chips für Eigenschaften */}
@@ -2756,7 +2756,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   </div>
 
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    {t('location', 'Ort')}: {c.locationId ? buildLocationPath(c.locationId, locations) : t('without_location', 'Kein Ort')}
+                    {t('location_colon', 'Ort:')} {c.locationId ? buildLocationPath(c.locationId, locations) : t('no_location', 'Kein Ort')}
                   </div>
 
                   {/* Chips für Eigenschaften */}
@@ -2852,7 +2852,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   </div>
 
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                    Ort: {d.locationId ? buildLocationPath(d.locationId, locations) : 'Kein Ort'}
+                    {t('location_colon', 'Ort:')} {d.locationId ? buildLocationPath(d.locationId, locations) : t('no_location', 'Kein Ort')}
                   </div>
 
                   {/* Chips für Eigenschaften */}
