@@ -4165,8 +4165,8 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     <Globe size={18} style={{ color: 'var(--accent-primary)' }} />
                     {t('language_setting', 'Sprache')}
                   </span>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                    {language === 'de' ? '🇩🇪 Deutsch' : '🇬🇧 English'} &rarr;
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    {language === 'de' ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><GermanFlagIcon /> Deutsch</span> : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><UKFlagIcon /> English</span>} &rarr;
                   </span>
                 </button>
 
