@@ -48,6 +48,33 @@ const generateUUID = () => {
   });
 };
 
+const formatDisplayValue = (val: string, lang: string): string => {
+  if (!val) return val;
+  if (val === 'Klinke (3.5mm)' || val === 'Klinke') return lang === 'en' ? 'Jack (3.5mm)' : 'Klinke (3.5mm)';
+  if (val === 'Kein USB-Standard') return lang === 'en' ? 'No USB Standard' : 'Kein USB-Standard';
+  if (val === 'Kein Standard / Spezifisch') return lang === 'en' ? 'No Standard / Specific' : 'Kein Standard / Spezifisch';
+  if (val === 'Lightning MFi-Zertifiziert') return lang === 'en' ? 'Lightning MFi Certified' : 'Lightning MFi-Zertifiziert';
+  if (val === 'Nur Laden') return lang === 'en' ? 'Charging Only' : 'Nur Laden';
+  if (val === 'Keine') return lang === 'en' ? 'None' : 'Keine';
+  if (val === 'Neu') return lang === 'en' ? 'New' : 'Neu';
+  if (val === 'Sehr gut') return lang === 'en' ? 'Very Good' : 'Sehr gut';
+  if (val === 'Gebraucht') return lang === 'en' ? 'Used' : 'Gebraucht';
+  if (val === 'Defekt') return lang === 'en' ? 'Defective' : 'Defekt';
+  if (val === 'Kunststoff') return lang === 'en' ? 'Plastic' : 'Kunststoff';
+  if (val === 'Nylon geflochten') return lang === 'en' ? 'Braided Nylon' : 'Nylon geflochten';
+  if (val === 'Gummi') return lang === 'en' ? 'Rubber' : 'Gummi';
+  if (val === 'Textil') return lang === 'en' ? 'Textile' : 'Textil';
+  if (val === 'Schwarz') return lang === 'en' ? 'Black' : 'Schwarz';
+  if (val === 'Weiß') return lang === 'en' ? 'White' : 'Weiß';
+  if (val === 'Grau') return lang === 'en' ? 'Gray' : 'Grau';
+  if (val === 'Blau') return lang === 'en' ? 'Blue' : 'Blau';
+  if (val === 'Rot') return lang === 'en' ? 'Red' : 'Rot';
+  if (val === 'Grün') return lang === 'en' ? 'Green' : 'Grün';
+  if (val === 'Silber') return lang === 'en' ? 'Silver' : 'Silber';
+  if (val === 'Generisch') return lang === 'en' ? 'Generic' : 'Generisch';
+  return val;
+};
+
 const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 export default function App() {
@@ -2767,20 +2794,20 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Paar: Stecker 1 + Standard 1 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 1</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_type_1', 'Stecker-Typ 1')}</label>
                 <select value={cabConnectorType1} onChange={e => handleSelectChange('Stecker-Typ 1', e.target.value, connectors, setConnectors, 'list_connectors', setCabConnectorType1)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                  {connectors.map(c => <option key={c} value={c}>{formatDisplayValue(c, language)}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 1)</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('standard_connector_1', 'Standard (Stecker 1)')}</label>
                 <select value={cabCableStandard1} onChange={e => handleCableStandardSelect(1, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <option value="">-- Keine Angabe --</option>
+                  <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
                   {(cableStandardGroups[getConnectorFamily(cabConnectorType1)] || []).map(u => (
-                    <option key={u} value={u}>{u}</option>
+                    <option key={u} value={u}>{formatDisplayValue(u, language)}</option>
                   ))}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                 </select>
               </div>
             </div>
@@ -2788,20 +2815,20 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Paar: Stecker 2 + Standard 2 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 2</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_type_2', 'Stecker-Typ 2')}</label>
                 <select value={cabConnectorType2} onChange={e => handleSelectChange('Stecker-Typ 2', e.target.value, connectors, setConnectors, 'list_connectors', setCabConnectorType2)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                  {connectors.map(c => <option key={c} value={c}>{formatDisplayValue(c, language)}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 2)</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('standard_connector_2', 'Standard (Stecker 2)')}</label>
                 <select value={cabCableStandard2} onChange={e => handleCableStandardSelect(2, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <option value="">-- Keine Angabe --</option>
+                  <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
                   {(cableStandardGroups[getConnectorFamily(cabConnectorType2)] || []).map(u => (
-                    <option key={u} value={u}>{u}</option>
+                    <option key={u} value={u}>{formatDisplayValue(u, language)}</option>
                   ))}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                 </select>
               </div>
             </div>
@@ -2809,11 +2836,11 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Kabellänge */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kabellänge</label>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('length', 'Kabellänge')}</label>
                 <select value={cabLength} onChange={e => handleSelectChange('Kabellänge', e.target.value, lengths, setLengths, 'list_lengths', setCabLength)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <option value="">-- Keine Angabe --</option>
+                  <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
                   {lengths.map(l => <option key={l} value={l}>{l}</option>)}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                 </select>
               </div>
               <div>
@@ -2834,12 +2861,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
                 {propertyAssignments.brand?.includes('cable') && expandedCabProps.brand && (
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Marke</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('brand', 'Marke')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                       <select value={cabBrand} onChange={e => handleSelectChange('Marke', e.target.value, brands, setBrands, 'list_brands', setCabBrand)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">-- Keine Angabe --</option>
-                        {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
+                        {brands.map(b => <option key={b} value={b}>{formatDisplayValue(b, language)}</option>)}
+                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                       </select>
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, brand: false })); setCabBrand(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
@@ -2847,12 +2874,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 )}
                 {propertyAssignments.color?.includes('cable') && expandedCabProps.color && (
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Farbe</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('color', 'Farbe')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                       <select value={cabColor} onChange={e => handleSelectChange('Farbe', e.target.value, colors, setColors, 'list_colors', setCabColor)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">-- Keine Angabe --</option>
-                        {colors.map(c => <option key={c} value={c}>{c}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
+                        {colors.map(c => <option key={c} value={c}>{formatDisplayValue(c, language)}</option>)}
+                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                       </select>
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, color: false })); setCabColor(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
@@ -2860,12 +2887,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 )}
                 {propertyAssignments.condition?.includes('cable') && expandedCabProps.condition && (
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Zustand</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('condition', 'Zustand')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                       <select value={cabCondition} onChange={e => handleSelectChange('Zustand', e.target.value, conditions, setConditions, 'list_conditions', setCabCondition)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">-- Keine Angabe --</option>
-                        {conditions.map(c => <option key={c} value={c}>{c}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
+                        {conditions.map(c => <option key={c} value={c}>{formatDisplayValue(c, language)}</option>)}
+                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                       </select>
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, condition: false })); setCabCondition(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
@@ -2873,12 +2900,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 )}
                 {propertyAssignments.material?.includes('cable') && expandedCabProps.material && (
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Material</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('material', 'Material')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                       <select value={cabMaterial} onChange={e => handleSelectChange('Material', e.target.value, materials, setMaterials, 'list_materials', setCabMaterial)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">-- Keine Angabe --</option>
-                        {materials.map(m => <option key={m} value={m}>{m}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
+                        {materials.map(m => <option key={m} value={m}>{formatDisplayValue(m, language)}</option>)}
+                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                       </select>
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, material: false })); setCabMaterial(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
@@ -2886,12 +2913,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 )}
                 {propertyAssignments.dataRate?.includes('cable') && expandedCabProps.dataRate && (
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Datenrate</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('data_rate', 'Datenrate')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                       <select value={cabDataRate} onChange={e => handleSelectChange('Datenrate', e.target.value, dataRates, setDataRates, 'list_data_rates', setCabDataRate)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">-- Keine Angabe --</option>
-                        {dataRates.map(d => <option key={d} value={d}>{d}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
+                        {dataRates.map(d => <option key={d} value={d}>{formatDisplayValue(d, language)}</option>)}
+                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                       </select>
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, dataRate: false })); setCabDataRate(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
@@ -2899,12 +2926,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 )}
                 {propertyAssignments.chargingPower?.includes('cable') && expandedCabProps.chargingPower && (
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Ladeleistung</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('charging_power', 'Ladeleistung')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                       <select value={cabChargingPower} onChange={e => handleSelectChange('Ladeleistung', e.target.value, chargingPowers, setChargingPowers, 'list_charging_powers', setCabChargingPower)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">-- Keine Angabe --</option>
-                        {chargingPowers.map(p => <option key={p} value={p}>{p}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
+                        {chargingPowers.map(p => <option key={p} value={p}>{formatDisplayValue(p, language)}</option>)}
+                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                       </select>
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, chargingPower: false })); setCabChargingPower(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
@@ -2938,9 +2965,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           )}
                           style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                         >
-                          <option value="">-- Keine Angabe --</option>
-                          {prop.values.map(v => <option key={v} value={v}>{v}</option>)}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                          <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
+                          {prop.values.map(v => <option key={v} value={v}>{formatDisplayValue(v, language)}</option>)}
+                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                         </select>
                         <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, [prop.id]: false })); setCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                       </div>
@@ -3164,7 +3191,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
                     {/* Stecker-Typ als Eigenschaft */}
                     <span style={{ fontSize: '0.7rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid var(--border-glass)' }}>
-                      🔌 {c.connectorType1 && c.connectorType2 ? `${c.connectorType1} ↔ ${c.connectorType2}` : c.connectorType}
+                      🔌 {c.connectorType1 && c.connectorType2 ? `${formatDisplayValue(c.connectorType1, language)} ↔ ${formatDisplayValue(c.connectorType2, language)}` : formatDisplayValue(c.connectorType, language)}
                     </span>
                     {/* Hersteller als Eigenschaft */}
                     {c.brand && (
@@ -3306,7 +3333,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={() => setPorts([...ports, { portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>+ Weiteren Port hinzufügen</button>
+                <button type="button" onClick={() => setPorts([...ports, { portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>{t('add_port_button', '+ Weiteren Port hinzufügen')}</button>
               </div>
             )}
 
@@ -3337,9 +3364,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                           <select value={prop.val} onChange={e => handleSelectChange(prop.label, e.target.value, prop.list, prop.setList, prop.key, prop.setVal)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                            <option value="">-- Keine Angabe --</option>
-                            {prop.list.map(x => <option key={x} value={x}>{x}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                            <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
+                            {prop.list.map(x => <option key={x} value={x}>{formatDisplayValue(x, language)}</option>)}
+                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                           </select>
                           <button type="button" onClick={() => { setExpandedChargerProps(p => ({ ...p, [prop.id]: false })); prop.setVal(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                         </div>
@@ -3376,9 +3403,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                             )}
                             style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                           >
-                            <option value="">-- Keine Angabe --</option>
-                            {prop.values.map(v => <option key={v} value={v}>{v}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
+                            <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
+                            {prop.values.map(v => <option key={v} value={v}>{formatDisplayValue(v, language)}</option>)}
+                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                           </select>
                           <button type="button" onClick={() => { setExpandedChargerProps(p => ({ ...p, [prop.id]: false })); setCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                         </div>
@@ -3438,21 +3465,21 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {showCabLinks && (
               <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Verknüpfte Komponenten:</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('linked_components', 'Verknüpfte Komponenten')}:</span>
                   <button 
                     type="button"
-                    onClick={() => setLinkingSource({ id: 'form_cable', type: 'charger', name: cabName || 'Neues Ladegerät' })}
+                    onClick={() => setLinkingSource({ id: 'form_cable', type: 'charger', name: cabName || (language === 'en' ? 'New Charger' : 'Neues Ladegerät') })}
                     className="btn-primary"
                     style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
                   >
-                    Verknüpfen
+                    {t('link', 'Verknüpfen')}
                   </button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {cabFormLinks.map(linkedId => {
                     const dev = devices.find(d => d.id === linkedId);
                     const cab = cables.find(c => c.id === linkedId);
-                    const name = dev ? `📱 ${dev.name} (Gerät)` : cab ? `${cab.isMultiOutput ? '🔌' : '🔌'} ${cab.name} (${cab.isMultiOutput ? 'Ladegerät' : 'Kabel'})` : linkedId;
+                    const name = dev ? `📱 ${dev.name} (${t('devices', 'Gerät')})` : cab ? `${cab.isMultiOutput ? '🔌' : '🔌'} ${cab.name} (${cab.isMultiOutput ? t('chargers', 'Ladegerät') : t('cables', 'Kabel')})` : linkedId;
                     return (
                       <div key={linkedId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
                         <span>{name}</span>
@@ -3460,7 +3487,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       </div>
                     );
                   })}
-                  {cabFormLinks.length === 0 && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Keine Verknüpfungen vorhanden.</span>}
+                  {cabFormLinks.length === 0 && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('no_links', 'Keine Verknüpfungen vorhanden.')}</span>}
                 </div>
               </div>
             )}
@@ -3477,11 +3504,11 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('add_photo_label', 'Foto beschreiben & hinzufügen')}</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
                       <input 
                         type="text" 
-                        placeholder="Beschreibung (optional, z.B. Frontansicht)" 
+                        placeholder={t('photo_desc_placeholder', 'Beschreibung (optional)')}
                         value={tempCabImageLabel} 
                         onChange={e => setTempCabImageLabel(e.target.value)} 
                         style={{ padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }} 
@@ -3492,7 +3519,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
                         }} style={{ display: 'none' }} id="charger-cam-upload" />
                         <label htmlFor="charger-cam-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center' }}>
-                          📷 Kamera
+                          📷 {t('camera', 'Kamera')}
                         </label>
 
                         <input type="file" accept="image/*" onChange={e => {
@@ -3500,7 +3527,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           if (file) handleImageAttachmentUpload('cable', file, tempCabImageLabel);
                         }} style={{ display: 'none' }} id="charger-gal-upload" />
                         <label htmlFor="charger-gal-upload" className="btn-primary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.4rem', flex: 1, justifyContent: 'center', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)' }}>
-                          🖼️ Galerie
+                          🖼️ {t('gallery', 'Galerie')}
                         </label>
                       </div>
                     </div>
@@ -3530,16 +3557,16 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     ))}
                   </div>
                 )}
-                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Kompression läuft...</div>}
+                {isCompressing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('compression_running', 'Kompression läuft...')}</div>}
               </div>
             )}
 
-            <button type="submit" className="btn-primary" onClick={() => setCabIsMulti(true)}>Ladegerät anlegen</button>
+            <button type="submit" className="btn-primary" onClick={() => setCabIsMulti(true)}>{t('add_charger', 'Ladegerät anlegen')}</button>
           </form>
 
           {/* List Chargers */}
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
-            <h3>Ladegeräte</h3>
+            <h3>{t('chargers', 'Ladegeräte')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
               {cables.filter(c => c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)).map(c => (
                 <div 
@@ -3705,7 +3732,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                         <select value={devBrand} onChange={e => handleSelectChange(t('manufacturer', 'Hersteller'), e.target.value, brands, setBrands, 'list_brands', setDevBrand)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
                           <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                          {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                          {brands.map(b => <option key={b} value={b}>{formatDisplayValue(b, language)}</option>)}
                           <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                         </select>
                         <button type="button" onClick={() => { setExpandedDevProps(p => ({ ...p, brand: false })); setDevBrand(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
@@ -3722,7 +3749,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                           <select value={prop.val} onChange={e => handleSelectChange(prop.label, e.target.value, prop.list, prop.setList, prop.key, prop.setVal)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
                             <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                            {prop.list.map(x => <option key={x} value={x}>{x}</option>)}
+                            {prop.list.map(x => <option key={x} value={x}>{formatDisplayValue(x, language)}</option>)}
                             <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                           </select>
                           <button type="button" onClick={() => { setExpandedDevProps(p => ({ ...p, [prop.id]: false })); prop.setVal(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
@@ -3761,7 +3788,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                             style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                           >
                             <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                            {prop.values.map(v => <option key={v} value={v}>{v}</option>)}
+                            {prop.values.map(v => <option key={v} value={v}>{formatDisplayValue(v, language)}</option>)}
                             <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                           </select>
                           <button type="button" onClick={() => { setExpandedDevProps(p => ({ ...p, [prop.id]: false })); setDevCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
@@ -4833,7 +4860,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.75rem', background: editChargerType === 'only_fixed_cable' ? 'var(--accent-primary)' : 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
                         >
                           <CableIcon size={18} />
-                          <span>Festes Kabel</span>
+                          <span>{t('only_fixed_cable', 'Festes Kabel')}</span>
                         </button>
                         <button 
                           type="button" 
@@ -4853,27 +4880,27 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
                     {(editChargerType === 'only_fixed_cable' || editChargerType === 'hybrid') && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)' }}>
-                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Festes Kabel</span>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{t('only_fixed_cable', 'Festes Kabel')}</span>
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1.2fr 1fr 1fr', gap: '0.5rem' }}>
                           <div>
-                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Stecker-Typ</label>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('connector_type', 'Stecker-Typ')}</label>
                             <select value={editFixedConnector} onChange={e => setEditFixedConnector(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }}>
                               <option value="USB-C">USB-C</option>
                               <option value="Micro-USB">Micro-USB</option>
                               <option value="Lightning">Lightning</option>
                               <option value="DC-Jack">DC-Jack</option>
-                              <option value="Other">Andere</option>
+                              <option value="Other">{language === 'en' ? 'Other' : 'Andere'}</option>
                             </select>
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Länge</label>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('length', 'Länge')}</label>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                               <input type="text" placeholder="z.B. 1.5" value={editFixedLength} onChange={e => setEditFixedLength(e.target.value)} style={{ width: '100%', padding: '0.4rem 1.2rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }} />
                               <span style={{ position: 'absolute', right: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>m</span>
                             </div>
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Leistung</label>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('power', 'Leistung')}</label>
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                               <input type="text" placeholder="z.B. 65" value={editFixedPower} onChange={e => setEditFixedPower(e.target.value)} style={{ width: '100%', padding: '0.4rem 1.2rem 0.4rem 0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }} />
                               <span style={{ position: 'absolute', right: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>W</span>
@@ -4914,7 +4941,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                             )}
                           </div>
                         ))}
-                        <button type="button" onClick={() => setEditPorts([...editPorts, { portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>+ Weiteren Port hinzufügen</button>
+                        <button type="button" onClick={() => setEditPorts([...editPorts, { portType: '' }])} style={{ background: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', textAlign: 'left', marginTop: '0.25rem', border: 'none', padding: 0, cursor: 'pointer' }}>{t('add_port_button', '+ Weiteren Port hinzufügen')}</button>
                       </div>
                     )}
                   </>
