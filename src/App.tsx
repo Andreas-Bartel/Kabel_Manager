@@ -219,6 +219,9 @@ export default function App() {
   const [expandedLocations, setExpandedLocations] = useState<Record<string, boolean>>({});
   const [linkingSource, setLinkingSource] = useState<{ id: string; type: 'cable' | 'charger' | 'device'; name: string } | null>(null);
   const [linkingTargetCategory, setLinkingTargetCategory] = useState<'cable' | 'charger' | 'device' | null>(null);
+  const [showQuickCreateLink, setShowQuickCreateLink] = useState(false);
+  const [quickCreateName, setQuickCreateName] = useState('');
+  const [quickCreateConnector, setQuickCreateConnector] = useState('USB-C');
 
   // Form States - Cable new attributes (Schritt 5 & Eigenschaften verwalten)
   const [cabCableStandard1, setCabCableStandard1] = useState('');
@@ -1471,6 +1474,70 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
     } catch (err: any) {
       alert("Fehler beim Löschen der Verknüpfung: " + err.message);
     }
+  };
+
+  const handleQuickCreateAndLink = async () => {
+    if (!linkingSource || !linkingTargetCategory) return;
+
+    const targetCategory = linkingTargetCategory;
+    const newId = generateUUID();
+    const defaultPrefix = targetCategory === 'device' 
+      ? (language === 'en' ? 'Device' : 'Gerät') 
+      : targetCategory === 'charger' 
+        ? (language === 'en' ? 'Charger' : 'Ladegerät') 
+        : (language === 'en' ? 'Cable' : 'Kabel');
+
+    let finalName = quickCreateName.trim();
+    if (!finalName) {
+      const existingNames = targetCategory === 'device'
+        ? devices.map(d => d.name)
+        : cables.filter(c => targetCategory === 'charger' ? (c.isMultiOutput || (c.powerOutputs && c.powerOutputs.length > 0)) : (!c.isMultiOutput && (!c.powerOutputs || c.powerOutputs.length === 0))).map(c => c.name);
+      finalName = generateNextDefaultName(defaultPrefix, existingNames);
+    }
+
+    if (targetCategory === 'device') {
+      const newDevice: Device = {
+        id: newId,
+        name: finalName,
+        requiredConnectorType: quickCreateConnector,
+        createdAt: new Date().toISOString(),
+        userId: currentUserId
+      };
+      await deviceRepo.saveDevice(newDevice);
+    } else if (targetCategory === 'charger') {
+      const newCharger: Cable = {
+        id: newId,
+        name: finalName,
+        isMultiOutput: true,
+        chargerType: 'only_ports',
+        connectorType: quickCreateConnector as any,
+        powerOutputs: [{ portType: quickCreateConnector as any }],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        userId: currentUserId
+      };
+      await cableRepo.saveCable(newCharger);
+    } else {
+      const newCable: Cable = {
+        id: newId,
+        name: finalName,
+        connectorType: quickCreateConnector as any,
+        connectorType1: quickCreateConnector as any,
+        connectorType2: quickCreateConnector as any,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        userId: currentUserId
+      };
+      await cableRepo.saveCable(newCable);
+    }
+
+    await refreshData();
+    await handleLinkComponents(linkingSource.type, linkingSource.id, targetCategory, newId);
+
+    setQuickCreateName('');
+    setShowQuickCreateLink(false);
+    setLinkingSource(null);
+    setLinkingTargetCategory(null);
   };
 
   const openCableDetails = (cable: Cable) => {
@@ -6067,7 +6134,45 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <button onClick={() => setLinkingTargetCategory(null)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.75rem', cursor: 'pointer' }}>{t('back', 'Zurück')}</button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                {showQuickCreateLink ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', background: 'var(--bg-tertiary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px dashed var(--accent-primary)' }}>
+                    <strong style={{ fontSize: '0.85rem' }}>
+                      ✨ {language === 'en' ? 'Quick Create & Link' : 'Direkt anlegen & verknüpfen'}
+                    </strong>
+                    <input 
+                      type="text" 
+                      placeholder={`Name (${language === 'en' ? 'optional, e.g.' : 'optional, z.B.'} ${linkingTargetCategory === 'device' ? 'iPhone 15' : linkingTargetCategory === 'charger' ? 'Anker 65W' : 'USB-C Kabel'})`}
+                      value={quickCreateName}
+                      onChange={e => setQuickCreateName(e.target.value)}
+                      style={{ padding: '0.5rem', fontSize: '0.8rem', background: 'var(--bg-primary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}
+                    />
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('connector_type', 'Stecker / Port')}:</label>
+                      <select value={quickCreateConnector} onChange={e => setQuickCreateConnector(e.target.value)} style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-primary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}>
+                        {connectors.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                      <button type="button" onClick={handleQuickCreateAndLink} className="btn-primary" style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem' }}>
+                        {t('create_and_link', 'Erstellen & Verknüpfen')}
+                      </button>
+                      <button type="button" onClick={() => setShowQuickCreateLink(false)} style={{ background: 'none', border: '1px solid var(--border-glass)', padding: '0.4rem', fontSize: '0.8rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                        {t('cancel', 'Abbrechen')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowQuickCreateLink(true)} 
+                    className="btn-primary" 
+                    style={{ width: '100%', padding: '0.6rem', fontSize: '0.8rem', background: 'var(--accent-gradient)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+                  >
+                    <span>+</span> {language === 'en' ? `Create new ${linkingTargetCategory === 'device' ? 'Device' : linkingTargetCategory === 'charger' ? 'Charger' : 'Cable'} & link` : `Neues ${linkingTargetCategory === 'device' ? 'Gerät' : linkingTargetCategory === 'charger' ? 'Ladegerät' : 'Kabel'} anlegen & verknüpfen`}
+                  </button>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '180px', overflowY: 'auto', paddingRight: '0.25rem' }}>
                   {(() => {
                     let items: any[] = [];
                     if (linkingTargetCategory === 'device') {
