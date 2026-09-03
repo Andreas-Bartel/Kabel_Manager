@@ -2055,18 +2055,18 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {/* A4 QR-Druckbogen (Schritt 16) */}
           <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h3 style={{ fontSize: '1rem' }}>Etikettenbögen drucken</h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Drucke einen passgenauen A4-Bogen mit QR-Codes deiner Kabel aus.</p>
+              <h3 style={{ fontSize: '1rem' }}>{t('print_sheets', 'Etikettenbögen drucken')}</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('print_sheets_desc', 'Drucke einen passgenauen A4-Bogen mit QR-Codes deiner Kabel aus.')}</p>
             </div>
             <button onClick={() => window.print()} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-              <Printer size={16} /> Drucken
+              <Printer size={16} /> {t('print_button', 'Drucken')}
             </button>
           </div>
 
           {/* Scanner UI */}
           <div className="glass-panel" style={{ padding: '1.25rem', textAlign: 'center' }}>
             <h3>
-              {reassigningCableId ? "🔍 Scanne neuen Sticker zum Ummelden" : "In-App Scanner"}
+              {reassigningCableId ? (language === 'en' ? "🔍 Scan new sticker to reassign" : "🔍 Scanne neuen Sticker zum Ummelden") : (language === 'en' ? "In-App Scanner" : "In-App Scanner")}
             </h3>
             
             {/* Dauer-Scan Toggle (Schritt 17) */}
@@ -2077,19 +2077,19 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   setContinuousScanHistory([]);
                   setScanResultCable(null);
                 }} />
-                <label htmlFor="continuous" style={{ fontSize: '0.85rem' }}>Dauer-Scan-Modus (Massen-Scan)</label>
+                <label htmlFor="continuous" style={{ fontSize: '0.85rem' }}>{language === 'en' ? 'Continuous scan mode (bulk scan)' : 'Dauer-Scan-Modus (Massen-Scan)'}</label>
               </div>
             )}
 
             {cameraActive ? (
               <div style={{ position: 'relative', marginTop: '1rem', background: '#000', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '240px' }}>
                 <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button onClick={stopCamera} style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--error)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)' }}>Kamera aus</button>
+                <button onClick={stopCamera} style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', background: 'var(--error)', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)' }}>{language === 'en' ? 'Stop Camera' : 'Kamera aus'}</button>
               </div>
             ) : (
               <div style={{ padding: '2rem 1rem', border: '2px dashed var(--border-glass)', borderRadius: 'var(--radius-sm)', marginTop: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                 <Camera size={40} style={{ color: 'var(--text-secondary)' }} />
-                <button onClick={startCamera} className="btn-primary">Kamera aktivieren</button>
+                <button onClick={startCamera} className="btn-primary">{language === 'en' ? 'Activate Camera' : 'Kamera aktivieren'}</button>
               </div>
             )}
 
@@ -2101,7 +2101,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   const b64 = uuidToBase64Url(c.id);
                   return (
                     <button key={c.id} onClick={() => handleSimulatorScan(b64)} style={{ padding: '0.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: '4px', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Simuliere Scan: {c.name}</span>
+                      <span>{language === 'en' ? 'Simulate Scan:' : 'Simuliere Scan:'} {c.name}</span>
                       <span style={{ fontFamily: 'monospace', color: 'var(--accent-primary)' }}>{b64.substring(0, 10)}...</span>
                     </button>
                   );
@@ -2113,12 +2113,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {/* Dauer-Scan Historie */}
           {isContinuousScan && continuousScanHistory.length > 0 && (
             <div className="glass-panel" style={{ padding: '1.25rem' }}>
-              <h4>Kisten-Scan Historie (Zuletzt gescannt)</h4>
+              <h4>{language === 'en' ? 'Scan History (Recently Scanned)' : 'Kisten-Scan Historie (Zuletzt gescannt)'}</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
                 {continuousScanHistory.map(c => (
                   <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', background: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid var(--success)', borderRadius: '4px', fontSize: '0.85rem' }}>
                     <span>🔌 {c.name} ({c.connectorType})</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{c.locationId ? 'Ort ok' : 'Kein Ort'}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{c.locationId ? (language === 'en' ? 'Location set' : 'Ort ok') : t('without_location', 'Kein Ort')}</span>
                   </div>
                 ))}
               </div>
@@ -2130,13 +2130,13 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '6px solid var(--success)' }}>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--success)' }}>
                 <CheckCircle2 size={20} />
-                <h4 style={{ margin: 0 }}>Kabel erkannt</h4>
+                <h4 style={{ margin: 0 }}>{language === 'en' ? 'Cable Recognized' : 'Kabel erkannt'}</h4>
               </div>
               <div style={{ marginTop: '0.75rem' }}>
-                <strong>Name:</strong> {scanResultCable.name}<br />
-                <strong>Stecker:</strong> {scanResultCable.connectorType}<br />
+                <strong>{t('name', 'Name')}:</strong> {scanResultCable.name}<br />
+                <strong>{t('connector', 'Stecker-Typ')}:</strong> {scanResultCable.connectorType}<br />
                 {scanResultCable.locationId && (
-                  <span><strong>Lagerort:</strong> {buildLocationPath(scanResultCable.locationId, locations)}<br /></span>
+                  <span><strong>{t('location', 'Lagerort')}:</strong> {buildLocationPath(scanResultCable.locationId, locations)}<br /></span>
                 )}
               </div>
             </div>
@@ -2146,7 +2146,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <div className="glass-panel" style={{ padding: '1.25rem', borderLeft: '6px solid var(--error)', color: 'var(--error)' }}>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <XCircle size={20} />
-                <h4 style={{ margin: 0 }}>Scan-Fehler</h4>
+                <h4 style={{ margin: 0 }}>{language === 'en' ? 'Scan Error' : 'Scan-Fehler'}</h4>
               </div>
               <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>{scanError}</p>
             </div>
@@ -3955,7 +3955,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {/* 1. MAIN SETTINGS MENU */}
           {settingsView === 'menu' && (
             <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <h3>Einstellungen</h3>
+              <h3>{t('settings', 'Einstellungen')}</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button 
                   onClick={() => setSettingsView('layout')}
@@ -3964,7 +3964,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
                     <Sun size={18} style={{ color: 'var(--accent-primary)' }} />
-                    Layout (Theme)
+                    {t('layout_theme', 'Layout (Theme)')}
                   </span>
                   <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
                 </button>
@@ -3976,7 +3976,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 >
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
                     <Layers size={18} style={{ color: 'var(--accent-secondary)' }} />
-                    Eigenschaften verwalten
+                    {t('manage_properties', 'Eigenschaften verwalten')}
                   </span>
                   <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
                 </button>
@@ -4556,14 +4556,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
                 {/* Verknüpfte Komponenten list */}
                 <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-                  <strong style={{ fontSize: '0.9rem', display: 'block', marginBottom: '0.5rem' }}>Verknüpfte Komponenten:</strong>
+                  <strong style={{ fontSize: '0.9rem', display: 'block', marginBottom: '0.5rem' }}>{t('linked_components', 'Verknüpfte Komponenten')}:</strong>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                     {(selectedCableDetails.assignedDeviceIds || []).map(devId => {
                       const dev = devices.find(d => d.id === devId);
                       if (!dev) return null;
                       return (
                         <div key={devId} style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
-                          <span>📱 {dev.name} (Gerät)</span>
+                          <span>📱 {dev.name} ({t('devices', 'Gerät')})</span>
                         </div>
                       );
                     })}
@@ -4573,20 +4573,20 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
                       return (
                         <div key={cabId} style={{ background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
-                          <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? 'Ladegerät' : 'Kabel'})</span>
+                          <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? t('chargers', 'Ladegerät') : t('cables', 'Kabel')})</span>
                         </div>
                       );
                     })}
                     {(!selectedCableDetails.assignedDeviceIds || selectedCableDetails.assignedDeviceIds.length === 0) &&
                      (!selectedCableDetails.assignedCableIds || selectedCableDetails.assignedCableIds.length === 0) && (
-                       <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Keine Verknüpfungen vorhanden.</span>
-                     )}
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('no_links', 'Keine Verknüpfungen vorhanden.')}</span>
+                      )}
                   </div>
                 </div>
 
                 {/* READ-ONLY CTA BUTTONS: 2-column grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-                  <button type="button" onClick={() => setEditIsEditing(true)} className="btn-primary" style={{ padding: '0.6rem' }}>Bearbeiten</button>
+                  <button type="button" onClick={() => setEditIsEditing(true)} className="btn-primary" style={{ padding: '0.6rem' }}>{language === 'en' ? 'Edit' : 'Bearbeiten'}</button>
                   <button 
                     type="button" 
                     onClick={() => {
@@ -4596,7 +4596,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     className="btn-primary" 
                     style={{ background: 'var(--error)', padding: '0.6rem' }}
                   >
-                    Löschen
+                    {t('delete', 'Löschen')}
                   </button>
                   <button 
                     type="button" 
@@ -4607,9 +4607,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     className="btn-primary" 
                     style={{ background: 'var(--success)', padding: '0.6rem' }}
                   >
-                    Duplizieren
+                    {t('duplicate', 'Duplizieren')}
                   </button>
-                  <button type="button" onClick={() => setSelectedCableDetails(null)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>Abbrechen</button>
+                  <button type="button" onClick={() => setSelectedCableDetails(null)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>{t('cancel', 'Abbrechen')}</button>
                 </div>
               </div>
             </>
@@ -5157,8 +5157,8 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
             {/* CTA Buttons in Edit view: Speichern and Abbrechen */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-              <button type="submit" className="btn-primary" style={{ padding: '0.6rem' }}>Speichern</button>
-              <button type="button" onClick={() => setEditIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>Abbrechen</button>
+              <button type="submit" className="btn-primary" style={{ padding: '0.6rem' }}>{t('save', 'Speichern')}</button>
+              <button type="button" onClick={() => setEditIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>{t('cancel', 'Abbrechen')}</button>
             </div>
           </form>
         </>
@@ -5276,7 +5276,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
                 {/* READ-ONLY CTA BUTTONS: 2-column grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-                  <button type="button" onClick={() => setEditDevIsEditing(true)} className="btn-primary" style={{ padding: '0.6rem' }}>Bearbeiten</button>
+                  <button type="button" onClick={() => setEditDevIsEditing(true)} className="btn-primary" style={{ padding: '0.6rem' }}>{language === 'en' ? 'Edit' : 'Bearbeiten'}</button>
                   <button 
                     type="button" 
                     onClick={() => {
@@ -5286,7 +5286,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     className="btn-primary" 
                     style={{ background: 'var(--error)', padding: '0.6rem' }}
                   >
-                    Löschen
+                    {t('delete', 'Löschen')}
                   </button>
                   <button 
                     type="button" 
@@ -5297,9 +5297,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     className="btn-primary" 
                     style={{ background: 'var(--success)', padding: '0.6rem' }}
                   >
-                    Duplizieren
+                    {t('duplicate', 'Duplizieren')}
                   </button>
-                  <button type="button" onClick={() => setSelectedDeviceDetails(null)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>Abbrechen</button>
+                  <button type="button" onClick={() => setSelectedDeviceDetails(null)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>{t('cancel', 'Abbrechen')}</button>
                 </div>
               </div>
             </>
@@ -5595,14 +5595,14 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 {/* Verknüpfte Komponenten */}
                 <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <strong style={{ fontSize: '0.9rem' }}>Verknüpfte Komponenten:</strong>
+                    <strong style={{ fontSize: '0.9rem' }}>{t('linked_components', 'Verknüpfte Komponenten')}:</strong>
                     <button 
                       type="button"
                       onClick={() => setLinkingSource({ id: selectedDeviceDetails.id, type: 'device', name: selectedDeviceDetails.name })}
                       className="btn-primary" 
                       style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
                     >
-                      Verknüpfen
+                      {t('link', 'Verknüpfen')}
                     </button>
                   </div>
 
@@ -5613,7 +5613,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
                       return (
                         <div key={cabId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-tertiary)', padding: '0.4rem 0.6rem', borderRadius: '4px', border: '1px solid var(--border-glass)', fontSize: '0.8rem' }}>
-                          <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? 'Ladegerät' : 'Kabel'})</span>
+                          <span>{isCharger ? '🔌' : '🔌'} {cab.name} ({isCharger ? t('chargers', 'Ladegerät') : t('cables', 'Kabel')})</span>
                           <button 
                             type="button"
                             onClick={() => handleUnlinkComponents('device', selectedDeviceDetails.id, isCharger ? 'charger' : 'cable', cabId)}
@@ -5625,15 +5625,15 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       );
                     })}
                     {(!selectedDeviceDetails.compatibleCableIds || selectedDeviceDetails.compatibleCableIds.length === 0) && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Keine Verknüpfungen vorhanden.</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('no_links', 'Keine Verknüpfungen vorhanden.')}</span>
                     )}
                   </div>
                 </div>
 
                 {/* EDITING CTA BUTTONS: 2-column grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-                  <button type="submit" className="btn-primary" style={{ padding: '0.6rem' }}>Speichern</button>
-                  <button type="button" onClick={() => setEditDevIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>Abbrechen</button>
+                  <button type="submit" className="btn-primary" style={{ padding: '0.6rem' }}>{t('save', 'Speichern')}</button>
+                  <button type="button" onClick={() => setEditDevIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>{t('cancel', 'Abbrechen')}</button>
                 </div>
               </form>
             </>
