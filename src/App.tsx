@@ -4729,7 +4729,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, wordBreak: 'break-word' }}>{selectedCableDetails.name}</h3>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
-                      📍 {t('location', 'Lagerort')}: {selectedCableDetails.locationId ? buildLocationPath(selectedCableDetails.locationId, locations) : t('without_location', 'Kein Lagerort')}
+                      📍 {t('location', 'Lagerort')}: {selectedCableDetails.locationId ? buildLocationPath(selectedCableDetails.locationId, locations) : t('no_location', 'Kein Ort')}
                     </div>
                   </div>
                 </div>
@@ -4948,7 +4948,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       onClick={() => setEditShowLoc(!editShowLoc)} 
                       style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
                     >
-                      📍 {editLocation ? `Lagerort: ${locations.find(l => l.id === editLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+                      📍 {editLocation ? `${t('location', 'Lagerort')}: ${locations.find(l => l.id === editLocation)?.name || (language === 'en' ? 'Selected' : 'Gewählt')}` : `+ ${t('location', 'Lagerort')}`}
                     </button>
                     {editShowLoc && (
                       <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
@@ -5504,7 +5504,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700, wordBreak: 'break-word' }}>{selectedDeviceDetails.name}</h3>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
-                      📍 {t('location', 'Lagerort')}: {selectedDeviceDetails.locationId ? buildLocationPath(selectedDeviceDetails.locationId, locations) : t('without_location', 'Kein Lagerort')}
+                      📍 {t('location', 'Lagerort')}: {selectedDeviceDetails.locationId ? buildLocationPath(selectedDeviceDetails.locationId, locations) : t('no_location', 'Kein Ort')}
                     </div>
                   </div>
                 </div>
@@ -5668,7 +5668,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       onClick={() => setEditShowLoc(!editShowLoc)} 
                       style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.6rem 0.75rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
                     >
-                      📍 {editDevLocation ? `Lagerort: ${locations.find(l => l.id === editDevLocation)?.name || 'Gewählt'}` : '+ Lagerort'}
+                      📍 {editDevLocation ? `${t('location', 'Lagerort')}: ${locations.find(l => l.id === editDevLocation)?.name || (language === 'en' ? 'Selected' : 'Gewählt')}` : `+ ${t('location', 'Lagerort')}`}
                     </button>
                     {editShowLoc && (
                       <div style={{ border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
