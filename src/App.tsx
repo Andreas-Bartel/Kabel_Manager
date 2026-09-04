@@ -5444,10 +5444,10 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               </div>
             </div>
 
-            {/* CTA Buttons in Edit view: Speichern and Abbrechen */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-              <button type="submit" className="btn-primary" style={{ padding: '0.6rem' }}>{t('save', 'Speichern')}</button>
-              <button type="button" onClick={() => setEditIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>{t('cancel', 'Abbrechen')}</button>
+            {/* CTA Buttons in Edit view: Sticky at bottom above native navigation bar */}
+            <div style={{ position: 'sticky', bottom: 0, left: 0, right: 0, background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-glass)', padding: '0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 24px)) 1rem', margin: '1.5rem -1rem -1rem -1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', zIndex: 30, boxShadow: '0 -4px 20px rgba(0,0,0,0.5)' }}>
+              <button type="submit" className="btn-primary" style={{ padding: '0.75rem' }}>{t('save', 'Speichern')}</button>
+              <button type="button" onClick={() => setEditIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>{t('cancel', 'Abbrechen')}</button>
             </div>
           </form>
         </>
@@ -5949,10 +5949,10 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   </div>
                 </div>
 
-                {/* EDITING CTA BUTTONS: 2-column grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '1.5rem', borderTop: '1px solid var(--border-glass)', paddingTop: '1rem' }}>
-                  <button type="submit" className="btn-primary" style={{ padding: '0.6rem' }}>{t('save', 'Speichern')}</button>
-                  <button type="button" onClick={() => setEditDevIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.6rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>{t('cancel', 'Abbrechen')}</button>
+                {/* EDITING CTA BUTTONS: Sticky at bottom above native navigation bar */}
+                <div style={{ position: 'sticky', bottom: 0, left: 0, right: 0, background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-glass)', padding: '0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 24px)) 1rem', margin: '1.5rem -1rem -1rem -1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', zIndex: 30, boxShadow: '0 -4px 20px rgba(0,0,0,0.5)' }}>
+                  <button type="submit" className="btn-primary" style={{ padding: '0.75rem' }}>{t('save', 'Speichern')}</button>
+                  <button type="button" onClick={() => setEditDevIsEditing(false)} style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>{t('cancel', 'Abbrechen')}</button>
                 </div>
               </form>
             </>
