@@ -16,6 +16,7 @@ import { GetCableByQrPayloadUseCase } from './contexts/inventory/application/Get
 import { compressImage } from './contexts/shared/infrastructure/imageCompressor';
 import { uuidToBase64Url, base64UrlToUuid } from './contexts/labels/domain/types';
 import { App as CapApp } from '@capacitor/app';
+import packageJson from '../package.json';
 
 // Repositories & Use Cases initialisieren
 const cableRepo = new LocalStorageCableRepository();
@@ -4637,7 +4638,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   </div>
 
                   <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    <div>Kabel Manager v1.2.0</div>
+                    <div>{t('app_title', 'Kabel Manager')} v{packageJson.version}</div>
                     <div>{t('guest_mode_active', 'Lokaler Gast-Modus aktiv')}</div>
                   </div>
                 </div>
