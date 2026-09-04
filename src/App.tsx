@@ -523,6 +523,9 @@ export default function App() {
   useEffect(() => {
     const handleFocusIn = (e: FocusEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) {
+        try {
+          (e.target as HTMLElement).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        } catch (_) {}
         setTimeout(() => {
           window.scrollTo(0, 0);
         }, 30);
@@ -4679,7 +4682,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
       {/* CABLE DETAILS MODAL */}
       {selectedCableDetails && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'var(--bg-primary)', zIndex: 1000, overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'var(--bg-primary)', zIndex: 1000, overflowY: 'auto' }}>
           {!editIsEditing ? (
             // READ-ONLY VIEW
             <>
@@ -5454,7 +5457,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
       {/* DEVICE DETAILS MODAL */}
       {selectedDeviceDetails && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'var(--bg-primary)', zIndex: 1000, overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'var(--bg-primary)', zIndex: 1000, overflowY: 'auto' }}>
           {!editDevIsEditing ? (
             // READ-ONLY VIEW
             <>
@@ -6116,7 +6119,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
       {/* MODAL: LINKING COMPONENTS */}
       {linkingSource && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(10px)', padding: 'calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem 1rem', overflowY: 'auto' }}>
-          <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.25rem', width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)', maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto' }}>
+          <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.25rem', width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)', maxHeight: '100%', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem' }}>
               <h3 style={{ margin: 0 }}>{t('link_component', 'Komponente verknüpfen')}</h3>
               <button onClick={() => { setLinkingSource(null); setLinkingTargetCategory(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
