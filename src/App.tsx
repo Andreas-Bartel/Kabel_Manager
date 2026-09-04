@@ -519,6 +519,19 @@ export default function App() {
     };
   }, [galleryImages, lightboxImage, linkingSource, selectedCableDetails, selectedDeviceDetails, activeTab, settingsView, inventoryLocationFilter]);
 
+  // Verhindert unerwünschtes Verschieben des Fensters auf Mobilgeräten beim Fokussieren von Eingabefeldern
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) {
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+        }, 30);
+      }
+    };
+    window.addEventListener('focusin', handleFocusIn);
+    return () => window.removeEventListener('focusin', handleFocusIn);
+  }, []);
+
   const [newCustomPropLabel, setNewCustomPropLabel] = useState('');
   const [tempPropValues, setTempPropValues] = useState<Record<string, string>>({});
 
@@ -6102,8 +6115,8 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
       {/* LINKING MODAL */}
       {/* MODAL: LINKING COMPONENTS */}
       {linkingSource && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(10px)', padding: '1rem' }}>
-          <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.5rem', width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(10px)', padding: 'calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem 1rem', overflowY: 'auto' }}>
+          <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.25rem', width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)', maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem' }}>
               <h3 style={{ margin: 0 }}>{t('link_component', 'Komponente verknüpfen')}</h3>
               <button onClick={() => { setLinkingSource(null); setLinkingTargetCategory(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer', lineHeight: 1 }}>&times;</button>
