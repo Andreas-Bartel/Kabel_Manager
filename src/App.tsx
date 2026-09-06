@@ -92,6 +92,7 @@ const formatDisplayValue = (val: string, lang: string): string => {
   if (val === 'Grün') return lang === 'en' ? 'Green' : 'Grün';
   if (val === 'Silber') return lang === 'en' ? 'Silver' : 'Silber';
   if (val === 'Generisch') return lang === 'en' ? 'Generic' : 'Generisch';
+  if (val === 'Netzstecker') return lang === 'en' ? 'Power Plug' : 'Netzstecker';
   return val;
 };
 
@@ -333,11 +334,22 @@ export default function App() {
     }
   });
   const [connectors, setConnectors] = useState<string[]>(() => {
+    const defaultList = ['USB-C', 'USB-A', 'Micro-USB', 'Lightning', 'HDMI', 'DisplayPort', 'DC-Jack', 'Klinke (3.5mm)', 'Netzstecker'];
     try {
       const saved = localStorage.getItem('list_connectors');
-      return saved ? JSON.parse(saved) : ['USB-C', 'USB-A', 'Micro-USB', 'Lightning', 'HDMI', 'DisplayPort', 'DC-Jack', 'Klinke (3.5mm)'];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          if (!parsed.includes('Netzstecker')) {
+            parsed.push('Netzstecker');
+            localStorage.setItem('list_connectors', JSON.stringify(parsed));
+          }
+          return parsed;
+        }
+      }
+      return defaultList;
     } catch {
-      return ['USB-C', 'USB-A', 'Micro-USB', 'Lightning', 'HDMI', 'DisplayPort', 'DC-Jack', 'Klinke (3.5mm)'];
+      return defaultList;
     }
   });
 
@@ -3471,14 +3483,28 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 {ports.map((p, idx) => (
                   <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.4rem', alignItems: 'center' }}>
                     <select value={p.portType} onChange={e => {
-                      const updated = [...ports];
-                      updated[idx].portType = e.target.value;
-                      setPorts(updated);
+                      if (e.target.value === '__ADD_NEW__') {
+                        const newValue = prompt(`Neuen Port-Typ eingeben:`);
+                        if (newValue && newValue.trim()) {
+                          const trimmed = newValue.trim();
+                          if (!connectors.includes(trimmed)) {
+                            const updatedConnectors = [...connectors, trimmed];
+                            setConnectors(updatedConnectors);
+                            localStorage.setItem('list_connectors', JSON.stringify(updatedConnectors));
+                          }
+                          const updatedPorts = [...ports];
+                          updatedPorts[idx].portType = trimmed;
+                          setPorts(updatedPorts);
+                        }
+                      } else {
+                        const updated = [...ports];
+                        updated[idx].portType = e.target.value;
+                        setPorts(updated);
+                      }
                     }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', colorScheme: 'dark' }}>
                       <option value="" style={{ background: '#121420', color: '#ffffff' }}>-- Port-Typ --</option>
-                      <option value="USB-C" style={{ background: '#121420', color: '#ffffff' }}>USB-C</option>
-                      <option value="USB-A" style={{ background: '#121420', color: '#ffffff' }}>USB-A</option>
-                      <option value="DC-Jack" style={{ background: '#121420', color: '#ffffff' }}>DC-Jack</option>
+                      {connectors.map(c => <option key={c} value={c} style={{ background: '#121420', color: '#ffffff' }}>{formatDisplayValue(c, language)}</option>)}
+                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold', background: '#121420' }}>+ {t('add_new_value', 'Neuen Wert hinzufügen...')}</option>
                     </select>
                     
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -3838,29 +3864,19 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <div style={{ display: 'grid', gridTemplateColumns: showDevPort2 ? '1fr 1fr' : '1fr', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_port_1', 'Anschluss (Port 1)')}</label>
-                <select value={devConnector} onChange={e => setDevConnector(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <option value="USB-C">USB-C</option>
-                  <option value="USB-A">USB-A</option>
-                  <option value="Micro-USB">Micro-USB</option>
-                  <option value="Lightning">Lightning</option>
-                  <option value="DC">DC</option>
-                  <option value="DC-Jack">DC-Jack</option>
-                  <option value="Other">{language === 'en' ? 'Other' : 'Andere'}</option>
+                <select value={devConnector} onChange={e => handleSelectChange(t('connector_port_1', 'Anschluss (Port 1)'), e.target.value, connectors, setConnectors, 'list_connectors', setDevConnector)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', colorScheme: 'dark' }}>
+                  {connectors.map(c => <option key={c} value={c} style={{ background: '#121420', color: '#ffffff' }}>{formatDisplayValue(c, language)}</option>)}
+                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold', background: '#121420' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                 </select>
               </div>
               {showDevPort2 && (
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_port_2', 'Anschluss (Port 2)')}</label>
                   <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                    <select value={devConnector2} onChange={e => setDevConnector2(e.target.value)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      <option value="">-- {language === 'en' ? 'None' : 'Keiner'} --</option>
-                      <option value="USB-C">USB-C</option>
-                      <option value="USB-A">USB-A</option>
-                      <option value="Micro-USB">Micro-USB</option>
-                      <option value="Lightning">Lightning</option>
-                      <option value="DC">DC</option>
-                      <option value="DC-Jack">DC-Jack</option>
-                      <option value="Other">{language === 'en' ? 'Other' : 'Andere'}</option>
+                    <select value={devConnector2} onChange={e => handleSelectChange(t('connector_port_2', 'Anschluss (Port 2)'), e.target.value, connectors, setConnectors, 'list_connectors', setDevConnector2)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', colorScheme: 'dark' }}>
+                      <option value="" style={{ background: '#121420', color: '#ffffff' }}>-- {t('none', 'Keiner')} --</option>
+                      {connectors.map(c => <option key={c} value={c} style={{ background: '#121420', color: '#ffffff' }}>{formatDisplayValue(c, language)}</option>)}
+                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold', background: '#121420' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
                     </select>
                     <button type="button" onClick={() => { setShowDevPort2(false); setDevConnector2(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                   </div>
@@ -5119,14 +5135,28 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         {editPorts.map((p, idx) => (
                           <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.4rem', alignItems: 'center' }}>
                             <select value={p.portType} onChange={e => {
-                              const updated = [...editPorts];
-                              updated[idx].portType = e.target.value;
-                              setEditPorts(updated);
-                            }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }}>
-                              <option value="">-- Port-Typ --</option>
-                              <option value="USB-C">USB-C</option>
-                              <option value="USB-A">USB-A</option>
-                              <option value="DC-Jack">DC-Jack</option>
+                              if (e.target.value === '__ADD_NEW__') {
+                                const newValue = prompt(`Neuen Port-Typ eingeben:`);
+                                if (newValue && newValue.trim()) {
+                                  const trimmed = newValue.trim();
+                                  if (!connectors.includes(trimmed)) {
+                                    const updatedConnectors = [...connectors, trimmed];
+                                    setConnectors(updatedConnectors);
+                                    localStorage.setItem('list_connectors', JSON.stringify(updatedConnectors));
+                                  }
+                                  const updatedPorts = [...editPorts];
+                                  updatedPorts[idx].portType = trimmed;
+                                  setEditPorts(updatedPorts);
+                                }
+                              } else {
+                                const updated = [...editPorts];
+                                updated[idx].portType = e.target.value;
+                                setEditPorts(updated);
+                              }
+                            }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', colorScheme: 'dark' }}>
+                              <option value="" style={{ background: '#121420', color: '#ffffff' }}>-- Port-Typ --</option>
+                              {connectors.map(c => <option key={c} value={c} style={{ background: '#121420', color: '#ffffff' }}>{formatDisplayValue(c, language)}</option>)}
+                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold', background: '#121420' }}>+ {t('add_new_value', 'Neuen Wert hinzufügen...')}</option>
                             </select>
                             
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
