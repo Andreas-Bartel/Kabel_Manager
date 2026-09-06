@@ -17,6 +17,7 @@ import { compressImage } from './contexts/shared/infrastructure/imageCompressor'
 import { uuidToBase64Url, base64UrlToUuid } from './contexts/labels/domain/types';
 import { App as CapApp } from '@capacitor/app';
 import packageJson from '../package.json';
+import { analytics } from './services/AnalyticsService';
 
 // Repositories & Use Cases initialisieren
 const cableRepo = new LocalStorageCableRepository();
@@ -245,11 +246,14 @@ export default function App() {
   const [tempDevImageLabel, setTempDevImageLabel] = useState('');
   const [cabLocParentId, setCabLocParentId] = useState<string | undefined>(undefined);
   const [devLocParentId, setDevLocParentId] = useState<string | undefined>(undefined);
-  const [settingsView, setSettingsView] = useState<'menu' | 'layout' | 'properties' | 'export' | 'about' | 'language'>('menu');
+  const [settingsView, setSettingsView] = useState<'menu' | 'layout' | 'properties' | 'export' | 'analytics' | 'about' | 'language'>('menu');
   const [selectedPropToAssign, setSelectedPropToAssign] = useState('');
+  const [gaMeasurementId, setGaMeasurementId] = useState(() => analytics.getMeasurementId());
+  const [gaEnabled, setGaEnabled] = useState(() => analytics.isEnabled());
 
-  // Setze den Einstellungs-Tab bei Wechsel zurück auf das Hauptmenü
+  // Track page views on tab switch & reset settings menu
   useEffect(() => {
+    analytics.trackPageView(activeTab);
     if (activeTab !== 'settings') {
       setSettingsView('menu');
     }
@@ -1561,6 +1565,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
     }
 
     await refreshData();
+    analytics.trackEvent('quick_create_linked', { target_category: targetCategory });
     await handleLinkComponents(linkingSource.type, linkingSource.id, targetCategory, newId);
 
     setQuickCreateName('');
@@ -4273,6 +4278,18 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 </button>
 
                 <button 
+                  onClick={() => setSettingsView('analytics')}
+                  className="tile-btn"
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
+                    <Info size={18} style={{ color: 'var(--accent-secondary)' }} />
+                    {language === 'en' ? 'Analytics & Privacy' : 'Analytics & Datenschutz'}
+                  </span>
+                  <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
+                </button>
+
+                <button 
                   onClick={() => setSettingsView('about')}
                   className="tile-btn"
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
@@ -4645,7 +4662,61 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             </div>
           )}
 
-          {/* 5. SUB-VIEW: ABOUT */}
+          {/* 5. SUB-VIEW: ANALYTICS */}
+          {settingsView === 'analytics' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <h3>{language === 'en' ? 'Google Analytics & Privacy' : 'Google Analytics & Datenschutz'}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{language === 'en' ? 'Enable Analytics Tracking' : 'Nutzungsstatistiken erlauben'}</span>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const newStatus = !analytics.isEnabled();
+                        analytics.setEnabled(newStatus);
+                        setGaEnabled(newStatus);
+                      }}
+                      style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer' }}
+                    >
+                      {gaEnabled ? (language === 'en' ? 'Active' : 'Aktiviert') : (language === 'en' ? 'Disabled' : 'Deaktiviert')}
+                    </button>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      {language === 'en' ? 'GA4 Measurement ID (e.g. G-XXXXXXXXXX)' : 'GA4 Mess-ID (z.B. G-XXXXXXXXXX)'}
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input 
+                        type="text" 
+                        placeholder="G-XXXXXXXXXX" 
+                        value={gaMeasurementId} 
+                        onChange={e => setGaMeasurementId(e.target.value)} 
+                        style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          analytics.setMeasurementId(gaMeasurementId);
+                          alert(language === 'en' ? 'GA4 Measurement ID saved!' : 'GA4 Mess-ID erfolgreich gespeichert!');
+                        }} 
+                        className="btn-primary" 
+                        style={{ padding: '0.6rem 1rem', fontSize: '0.85rem' }}
+                      >
+                        {t('save', 'Speichern')}
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+                      {language === 'en' ? 'Enter your Google Analytics 4 Measurement ID to send anonymized user interaction events.' : 'Trage hier deine Google Analytics 4 Mess-ID ein, um anonyme Nutzungsstatistiken auszuwerten.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 6. SUB-VIEW: ABOUT */}
           {settingsView === 'about' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', color: 'var(--text-primary)' }}>
