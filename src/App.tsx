@@ -3474,11 +3474,11 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       const updated = [...ports];
                       updated[idx].portType = e.target.value;
                       setPorts(updated);
-                    }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem' }}>
-                      <option value="">-- Port-Typ --</option>
-                      <option value="USB-C">USB-C</option>
-                      <option value="USB-A">USB-A</option>
-                      <option value="DC-Jack">DC-Jack</option>
+                    }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', colorScheme: 'dark' }}>
+                      <option value="" style={{ background: '#121420', color: '#ffffff' }}>-- Port-Typ --</option>
+                      <option value="USB-C" style={{ background: '#121420', color: '#ffffff' }}>USB-C</option>
+                      <option value="USB-A" style={{ background: '#121420', color: '#ffffff' }}>USB-A</option>
+                      <option value="DC-Jack" style={{ background: '#121420', color: '#ffffff' }}>DC-Jack</option>
                     </select>
                     
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>

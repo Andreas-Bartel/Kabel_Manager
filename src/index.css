@@ -103,6 +103,22 @@ button {
   outline: none;
 }
 
+select {
+  font-family: var(--font-sans);
+  color-scheme: dark;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+option {
+  background-color: #121420 !important;
+  color: #ffffff !important;
+}
+
+option:disabled {
+  color: #9ca3af !important;
+}
+
 .btn-primary {
   background: var(--accent-gradient);
   color: white;
