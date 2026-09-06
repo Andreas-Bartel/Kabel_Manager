@@ -44,6 +44,11 @@ class AnalyticsService {
       script.id = 'ga-gtag-script';
       script.async = true;
       script.src = `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`;
+      
+      script.onerror = () => {
+        console.warn('[Analytics] Google Analytics script failed to load. An AdBlocker or Privacy Extension might be blocking googletagmanager.com.');
+      };
+
       document.head.appendChild(script);
 
       // Initialize dataLayer
@@ -55,8 +60,9 @@ class AnalyticsService {
 
       gtag('js', new Date());
       gtag('config', this.measurementId, {
-        send_page_view: false, // We handle page views manually via trackPageView
-        anonymize_ip: true
+        send_page_view: true,
+        anonymize_ip: true,
+        debug_mode: true // Enables real-time debugging in GA4 DebugView
       });
 
       this.initialized = true;
@@ -106,6 +112,7 @@ class AnalyticsService {
           page_location: window.location.href,
           page_path: `/${pageName}`
         });
+        console.log(`[Analytics Event] page_view: /${pageName}`);
       }
     } catch (err) {
       console.warn('[Analytics] trackPageView failed:', err);
@@ -121,6 +128,7 @@ class AnalyticsService {
     try {
       if ((window as any).gtag) {
         (window as any).gtag('event', eventName, params);
+        console.log(`[Analytics Event] ${eventName}`, params);
       }
     } catch (err) {
       console.warn(`[Analytics] trackEvent (${eventName}) failed:`, err);
