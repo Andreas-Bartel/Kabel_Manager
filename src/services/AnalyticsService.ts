@@ -32,14 +32,15 @@ class AnalyticsService {
 
     if (!this.enabled) return;
 
-    // Check if script already injected
-    if (document.getElementById('ga-gtag-script')) {
-      this.initialized = true;
-      return;
-    }
-
     try {
-      // 1. Initialize dataLayer and window.gtag using standard function arguments
+      // Check if gtag is already initialized (e.g., via index.html)
+      if (typeof (window as any).gtag === 'function') {
+        this.initialized = true;
+        console.log(`[Analytics] Google Analytics attached to existing gtag with ID: ${this.measurementId}`);
+        return;
+      }
+
+      // Fallback: 1. Initialize dataLayer and window.gtag
       (window as any).dataLayer = (window as any).dataLayer || [];
       (window as any).gtag = function () {
         (window as any).dataLayer.push(arguments);
@@ -50,23 +51,25 @@ class AnalyticsService {
       (window as any).gtag('config', this.measurementId, {
         send_page_view: true,
         anonymize_ip: true,
-        debug_mode: true // Enables real-time debugging in GA4 DebugView
+        debug_mode: true
       });
 
-      // 3. Inject Google Analytics gtag.js script
-      const script = document.createElement('script');
-      script.id = 'ga-gtag-script';
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`;
+      // 3. Inject script tag if missing
+      if (!document.getElementById('ga-gtag-script')) {
+        const script = document.createElement('script');
+        script.id = 'ga-gtag-script';
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`;
 
-      script.onerror = () => {
-        console.warn('[Analytics] Google Analytics script failed to load. An AdBlocker or Privacy Extension might be blocking googletagmanager.com.');
-      };
+        script.onerror = () => {
+          console.warn('[Analytics] Google Analytics script failed to load. An AdBlocker or Privacy Extension might be blocking googletagmanager.com.');
+        };
 
-      document.head.appendChild(script);
+        document.head.appendChild(script);
+      }
 
       this.initialized = true;
-      console.log(`[Analytics] Google Analytics initialized with ID: ${this.measurementId}`);
+      console.log(`[Analytics] Google Analytics initialized dynamically with ID: ${this.measurementId}`);
     } catch (err) {
       console.warn('[Analytics] Failed to initialize Google Analytics:', err);
     }
