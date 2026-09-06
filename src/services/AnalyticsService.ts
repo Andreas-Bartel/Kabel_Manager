@@ -12,7 +12,7 @@ class AnalyticsService {
     if (typeof window !== 'undefined') {
       const savedId = localStorage.getItem('ga_measurement_id');
       const savedEnabled = localStorage.getItem('analytics_enabled');
-      this.measurementId = savedId || import.meta.env.VITE_GA_MEASUREMENT_ID || '';
+      this.measurementId = savedId || import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-2312BHVNX3';
       this.enabled = savedEnabled !== null ? savedEnabled === 'true' : true;
 
       if (this.measurementId && this.enabled) {
