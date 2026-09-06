@@ -4,86 +4,27 @@
  */
 
 class AnalyticsService {
-  private measurementId: string = '';
+  private measurementId: string = 'G-2312BHVNX3';
   private enabled: boolean = true;
-  private initialized: boolean = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
       const savedId = localStorage.getItem('ga_measurement_id');
       const savedEnabled = localStorage.getItem('analytics_enabled');
-      this.measurementId = savedId || import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-2312BHVNX3';
-      this.enabled = savedEnabled !== null ? savedEnabled === 'true' : true;
-
-      if (this.measurementId && this.enabled) {
-        this.initAnalytics(this.measurementId);
-      }
+      this.measurementId = (savedId && savedId.trim()) ? savedId.trim() : 'G-2312BHVNX3';
+      this.enabled = savedEnabled !== 'false'; // Default to true unless explicitly 'false'
     }
   }
 
-  /**
-   * Initializes Google Analytics 4 (gtag.js) dynamically
-   */
   public initAnalytics(measurementId: string): void {
-    if (!measurementId || typeof window === 'undefined') return;
-
-    this.measurementId = measurementId.trim();
+    if (typeof window === 'undefined') return;
+    this.measurementId = measurementId.trim() || 'G-2312BHVNX3';
     localStorage.setItem('ga_measurement_id', this.measurementId);
-
-    if (!this.enabled) return;
-
-    try {
-      // Check if gtag is already initialized (e.g., via index.html)
-      if (typeof (window as any).gtag === 'function') {
-        this.initialized = true;
-        console.log(`[Analytics] Google Analytics attached to existing gtag with ID: ${this.measurementId}`);
-        return;
-      }
-
-      // Fallback: 1. Initialize dataLayer and window.gtag
-      (window as any).dataLayer = (window as any).dataLayer || [];
-      (window as any).gtag = function () {
-        (window as any).dataLayer.push(arguments);
-      };
-
-      // 2. Queue initial configuration
-      (window as any).gtag('js', new Date());
-      (window as any).gtag('config', this.measurementId, {
-        send_page_view: true,
-        anonymize_ip: true,
-        debug_mode: true
-      });
-
-      // 3. Inject script tag if missing
-      if (!document.getElementById('ga-gtag-script')) {
-        const script = document.createElement('script');
-        script.id = 'ga-gtag-script';
-        script.async = true;
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`;
-
-        script.onerror = () => {
-          console.warn('[Analytics] Google Analytics script failed to load. An AdBlocker or Privacy Extension might be blocking googletagmanager.com.');
-        };
-
-        document.head.appendChild(script);
-      }
-
-      this.initialized = true;
-      console.log(`[Analytics] Google Analytics initialized dynamically with ID: ${this.measurementId}`);
-    } catch (err) {
-      console.warn('[Analytics] Failed to initialize Google Analytics:', err);
-    }
   }
 
-  /**
-   * Enable or disable analytics tracking (Opt-In / Opt-Out)
-   */
   public setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     localStorage.setItem('analytics_enabled', String(enabled));
-    if (enabled && this.measurementId && !this.initialized) {
-      this.initAnalytics(this.measurementId);
-    }
   }
 
   public isEnabled(): boolean {
@@ -95,21 +36,18 @@ class AnalyticsService {
   }
 
   public setMeasurementId(id: string): void {
-    this.measurementId = id.trim();
+    this.measurementId = id.trim() || 'G-2312BHVNX3';
     localStorage.setItem('ga_measurement_id', this.measurementId);
-    if (this.measurementId && this.enabled) {
-      this.initAnalytics(this.measurementId);
-    }
   }
 
   /**
    * Tracks a Screen / Page View (Tab Switch)
    */
   public trackPageView(pageName: string): void {
-    if (!this.enabled || !this.measurementId || typeof window === 'undefined') return;
+    if (!this.enabled || typeof window === 'undefined') return;
 
     try {
-      if ((window as any).gtag) {
+      if (typeof (window as any).gtag === 'function') {
         (window as any).gtag('event', 'page_view', {
           page_title: pageName,
           page_location: window.location.href,
@@ -126,10 +64,10 @@ class AnalyticsService {
    * Tracks a custom user interaction event
    */
   public trackEvent(eventName: string, params: Record<string, any> = {}): void {
-    if (!this.enabled || !this.measurementId || typeof window === 'undefined') return;
+    if (!this.enabled || typeof window === 'undefined') return;
 
     try {
-      if ((window as any).gtag) {
+      if (typeof (window as any).gtag === 'function') {
         (window as any).gtag('event', eventName, params);
         console.log(`[Analytics Event] ${eventName}`, params);
       }
