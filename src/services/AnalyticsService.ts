@@ -39,31 +39,31 @@ class AnalyticsService {
     }
 
     try {
-      // Inject Google Analytics gtag.js script
+      // 1. Initialize dataLayer and window.gtag using standard function arguments
+      (window as any).dataLayer = (window as any).dataLayer || [];
+      (window as any).gtag = function () {
+        (window as any).dataLayer.push(arguments);
+      };
+
+      // 2. Queue initial configuration
+      (window as any).gtag('js', new Date());
+      (window as any).gtag('config', this.measurementId, {
+        send_page_view: true,
+        anonymize_ip: true,
+        debug_mode: true // Enables real-time debugging in GA4 DebugView
+      });
+
+      // 3. Inject Google Analytics gtag.js script
       const script = document.createElement('script');
       script.id = 'ga-gtag-script';
       script.async = true;
       script.src = `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`;
-      
+
       script.onerror = () => {
         console.warn('[Analytics] Google Analytics script failed to load. An AdBlocker or Privacy Extension might be blocking googletagmanager.com.');
       };
 
       document.head.appendChild(script);
-
-      // Initialize dataLayer
-      (window as any).dataLayer = (window as any).dataLayer || [];
-      function gtag(...args: any[]) {
-        (window as any).dataLayer.push(arguments);
-      }
-      (window as any).gtag = gtag;
-
-      gtag('js', new Date());
-      gtag('config', this.measurementId, {
-        send_page_view: true,
-        anonymize_ip: true,
-        debug_mode: true // Enables real-time debugging in GA4 DebugView
-      });
 
       this.initialized = true;
       console.log(`[Analytics] Google Analytics initialized with ID: ${this.measurementId}`);
