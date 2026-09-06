@@ -1058,6 +1058,7 @@ export default function App() {
       const newLoc = await createLocationUseCase.execute(locName, locParent || undefined, locDesc);
       newLoc.userId = currentUserId;
       await locationRepo.saveLocation(newLoc);
+      analytics.trackEvent('location_created');
       setLocName('');
       setLocParent('');
       setLocDesc('');
@@ -1283,6 +1284,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
     };
 
     await cableRepo.saveCable(newCable);
+    analytics.trackEvent('cable_created', { is_multi: cabIsMulti });
     setCabName('');
     setCabLocation('');
     setCabIsMulti(false);
@@ -1380,6 +1382,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
     };
 
     await deviceRepo.saveDevice(newDevice);
+    analytics.trackEvent('device_created');
     setDevName('');
     setDevBrand('');
     setDevConnector2('');
