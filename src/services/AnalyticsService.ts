@@ -48,9 +48,14 @@ class AnalyticsService {
 
     try {
       if (typeof (window as any).gtag === 'function') {
-        (window as any).gtag('event', 'page_view', {
+        (window as any).gtag('config', this.measurementId, {
+          page_path: `/${pageName}`,
           page_title: pageName,
-          page_location: window.location.href,
+          debug_mode: true
+        });
+        (window as any).gtag('event', 'page_view', {
+          send_to: this.measurementId,
+          page_title: pageName,
           page_path: `/${pageName}`
         });
         console.log(`[Analytics Event] page_view: /${pageName}`);
@@ -68,7 +73,10 @@ class AnalyticsService {
 
     try {
       if (typeof (window as any).gtag === 'function') {
-        (window as any).gtag('event', eventName, params);
+        (window as any).gtag('event', eventName, {
+          send_to: this.measurementId,
+          ...params
+        });
         console.log(`[Analytics Event] ${eventName}`, params);
       }
     } catch (err) {
