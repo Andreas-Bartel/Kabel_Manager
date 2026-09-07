@@ -694,19 +694,19 @@ export default function App() {
       root.style.setProperty('--bg-primary', '#111422');
       root.style.setProperty('--bg-secondary', '#1a1d30');
       root.style.setProperty('--bg-tertiary', '#242842');
-      root.style.setProperty('--bg-glass', 'rgba(26, 29, 48, 0.95)');
+      root.style.setProperty('--bg-glass', '#1a1d30');
       root.style.setProperty('--border-glass', 'rgba(255, 255, 255, 0.15)');
       root.style.setProperty('--text-primary', '#f8fafc');
       root.style.setProperty('--text-secondary', '#cbd5e1');
       root.style.setProperty('--icon-filter', 'invert(1)');
     } else {
-      root.style.setProperty('--bg-primary', '#f9fafb');
+      root.style.setProperty('--bg-primary', '#f8fafc');
       root.style.setProperty('--bg-secondary', '#ffffff');
-      root.style.setProperty('--bg-tertiary', '#f3f4f6');
-      root.style.setProperty('--bg-glass', 'rgba(255, 255, 255, 0.8)');
-      root.style.setProperty('--border-glass', 'rgba(0, 0, 0, 0.06)');
-      root.style.setProperty('--text-primary', '#111827');
-      root.style.setProperty('--text-secondary', '#4b5563');
+      root.style.setProperty('--bg-tertiary', '#f1f5f9');
+      root.style.setProperty('--bg-glass', '#ffffff');
+      root.style.setProperty('--border-glass', 'rgba(0, 0, 0, 0.08)');
+      root.style.setProperty('--text-primary', '#0f172a');
+      root.style.setProperty('--text-secondary', '#475569');
       root.style.setProperty('--icon-filter', 'none');
     }
   }, [darkMode]);

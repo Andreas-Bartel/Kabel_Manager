@@ -68,11 +68,9 @@ html, body, #root {
   overflow-x: hidden;
 }
 
-/* Premium UI elements & Glassmorphism */
+/* Premium UI elements & Solid Clean Panels */
 .glass-panel {
-  background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-premium);
@@ -80,8 +78,23 @@ html, body, #root {
 }
 
 .glass-panel:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: var(--shadow-premium);
+}
+
+input, select, textarea {
+  font-family: var(--font-sans);
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
 }
 
 /* Typography styles */
