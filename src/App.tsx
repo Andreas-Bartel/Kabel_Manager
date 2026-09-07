@@ -535,21 +535,7 @@ export default function App() {
     };
   }, [galleryImages, lightboxImage, linkingSource, selectedCableDetails, selectedDeviceDetails, activeTab, settingsView, inventoryLocationFilter]);
 
-  // Verhindert unerwünschtes Verschieben des Fensters auf Mobilgeräten beim Fokussieren von Eingabefeldern
-  useEffect(() => {
-    const handleFocusIn = (e: FocusEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) {
-        try {
-          (e.target as HTMLElement).scrollIntoView({ block: 'nearest', inline: 'nearest' });
-        } catch (_) {}
-        setTimeout(() => {
-          window.scrollTo(0, 0);
-        }, 30);
-      }
-    };
-    window.addEventListener('focusin', handleFocusIn);
-    return () => window.removeEventListener('focusin', handleFocusIn);
-  }, []);
+
 
   const [newCustomPropLabel, setNewCustomPropLabel] = useState('');
   const [tempPropValues, setTempPropValues] = useState<Record<string, string>>({});
@@ -705,13 +691,13 @@ export default function App() {
   useEffect(() => {
     const root = document.documentElement;
     if (darkMode) {
-      root.style.setProperty('--bg-primary', '#0a0b10');
-      root.style.setProperty('--bg-secondary', '#121420');
-      root.style.setProperty('--bg-tertiary', '#1b1e32');
-      root.style.setProperty('--bg-glass', 'rgba(18, 20, 32, 0.7)');
-      root.style.setProperty('--border-glass', 'rgba(255, 255, 255, 0.08)');
-      root.style.setProperty('--text-primary', '#f3f4f6');
-      root.style.setProperty('--text-secondary', '#9ca3af');
+      root.style.setProperty('--bg-primary', '#111422');
+      root.style.setProperty('--bg-secondary', '#1a1d30');
+      root.style.setProperty('--bg-tertiary', '#242842');
+      root.style.setProperty('--bg-glass', 'rgba(26, 29, 48, 0.95)');
+      root.style.setProperty('--border-glass', 'rgba(255, 255, 255, 0.15)');
+      root.style.setProperty('--text-primary', '#f8fafc');
+      root.style.setProperty('--text-secondary', '#cbd5e1');
       root.style.setProperty('--icon-filter', 'invert(1)');
     } else {
       root.style.setProperty('--bg-primary', '#f9fafb');
