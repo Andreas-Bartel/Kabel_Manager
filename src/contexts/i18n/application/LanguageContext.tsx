@@ -14,10 +14,30 @@ const LanguageContext = createContext<LanguageContextType>({
   t: (key: string, fallback?: string) => fallback || key,
 });
 
+const detectDeviceLanguage = (): Language => {
+  if (typeof window !== 'undefined' && navigator) {
+    const primary = (navigator.language || (navigator as any).userLanguage || '').toLowerCase();
+    if (primary.startsWith('de')) return 'de';
+    if (primary.startsWith('en')) return 'en';
+
+    if (navigator.languages && navigator.languages.length > 0) {
+      for (const lang of navigator.languages) {
+        const lower = lang.toLowerCase();
+        if (lower.startsWith('de')) return 'de';
+        if (lower.startsWith('en')) return 'en';
+      }
+    }
+  }
+  return 'en';
+};
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     const saved = localStorage.getItem('app_language');
-    return (saved === 'en' || saved === 'de') ? saved : 'de';
+    if (saved === 'en' || saved === 'de') {
+      return saved;
+    }
+    return detectDeviceLanguage();
   });
 
   const setLanguage = (lang: Language) => {
