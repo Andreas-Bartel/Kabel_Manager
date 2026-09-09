@@ -126,6 +126,21 @@ export default function App() {
   // Tab Navigation
   const [activeTab, setActiveTab] = useState<'home' | 'overview' | 'locations' | 'cables' | 'chargers' | 'devices' | 'scan' | 'settings' | 'inventory'>('home');
 
+  // Custom Prompt Modal State (Ersetzt ungestyltes/dunkles window.prompt)
+  const [promptModal, setPromptModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    value: string;
+    onSubmit: (val: string) => void;
+    onCancel: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    value: '',
+    onSubmit: () => {},
+    onCancel: () => {}
+  });
+
   const [inventoryTypeFilter, setInventoryTypeFilter] = useState<'all' | 'cables' | 'chargers' | 'devices'>('all');
   const [inventoryLocationFilter, setInventoryLocationFilter] = useState<string | null>(null);
   const [inventoryLocCurrentParentId, setInventoryLocCurrentParentId] = useState<string | undefined>(undefined);
@@ -246,10 +261,8 @@ export default function App() {
   const [tempDevImageLabel, setTempDevImageLabel] = useState('');
   const [cabLocParentId, setCabLocParentId] = useState<string | undefined>(undefined);
   const [devLocParentId, setDevLocParentId] = useState<string | undefined>(undefined);
-  const [settingsView, setSettingsView] = useState<'menu' | 'layout' | 'properties' | 'export' | 'analytics' | 'about' | 'language'>('menu');
+  const [settingsView, setSettingsView] = useState<'menu' | 'layout' | 'properties' | 'export' | 'about' | 'language'>('menu');
   const [selectedPropToAssign, setSelectedPropToAssign] = useState('');
-  const [gaMeasurementId, setGaMeasurementId] = useState(() => analytics.getMeasurementId());
-  const [gaEnabled, setGaEnabled] = useState(() => analytics.isEnabled());
 
   // Track page views on tab switch & reset settings menu
   useEffect(() => {
@@ -418,20 +431,32 @@ export default function App() {
     setFormValue: (v: string) => void
   ) => {
     if (value === '__ADD_NEW__') {
-      const newValue = prompt(`Neuen Wert für "${field}" eingeben:`);
-      if (newValue && newValue.trim()) {
-        const trimmed = newValue.trim();
-        if (!optionsList.includes(trimmed)) {
-          const updated = [...optionsList, trimmed];
-          setList(updated);
-          localStorage.setItem(storageKey, JSON.stringify(updated));
-          setFormValue(trimmed);
-        } else {
-          setFormValue(trimmed);
+      const promptTitle = language === 'en' ? `Enter new value for "${field}":` : `Neuen Wert für "${field}" eingeben:`;
+      setPromptModal({
+        isOpen: true,
+        title: promptTitle,
+        value: '',
+        onSubmit: (newValue: string) => {
+          if (newValue && newValue.trim()) {
+            const trimmed = newValue.trim();
+            if (!optionsList.includes(trimmed)) {
+              const updated = [...optionsList, trimmed];
+              setList(updated);
+              localStorage.setItem(storageKey, JSON.stringify(updated));
+              setFormValue(trimmed);
+            } else {
+              setFormValue(trimmed);
+            }
+          } else {
+            setFormValue('');
+          }
+          setPromptModal(prev => ({ ...prev, isOpen: false }));
+        },
+        onCancel: () => {
+          setFormValue('');
+          setPromptModal(prev => ({ ...prev, isOpen: false }));
         }
-      } else {
-        setFormValue(''); // Reset if cancelled
-      }
+      });
     } else {
       setFormValue(value);
     }
@@ -4267,18 +4292,6 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 </button>
 
                 <button 
-                  onClick={() => setSettingsView('analytics')}
-                  className="tile-btn"
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600 }}>
-                    <Info size={18} style={{ color: 'var(--accent-secondary)' }} />
-                    {language === 'en' ? 'Analytics & Privacy' : 'Analytics & Datenschutz'}
-                  </span>
-                  <span style={{ color: 'var(--text-secondary)' }}>&rarr;</span>
-                </button>
-
-                <button 
                   onClick={() => setSettingsView('about')}
                   className="tile-btn"
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'left' }}
@@ -4651,59 +4664,6 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             </div>
           )}
 
-          {/* 5. SUB-VIEW: ANALYTICS */}
-          {settingsView === 'analytics' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <h3>{language === 'en' ? 'Google Analytics & Privacy' : 'Google Analytics & Datenschutz'}</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>{language === 'en' ? 'Enable Analytics Tracking' : 'Nutzungsstatistiken erlauben'}</span>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const newStatus = !analytics.isEnabled();
-                        analytics.setEnabled(newStatus);
-                        setGaEnabled(newStatus);
-                      }}
-                      style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer' }}
-                    >
-                      {gaEnabled ? (language === 'en' ? 'Active' : 'Aktiviert') : (language === 'en' ? 'Disabled' : 'Deaktiviert')}
-                    </button>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                      {language === 'en' ? 'GA4 Measurement ID (e.g. G-XXXXXXXXXX)' : 'GA4 Mess-ID (z.B. G-XXXXXXXXXX)'}
-                    </label>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <input 
-                        type="text" 
-                        placeholder="G-XXXXXXXXXX" 
-                        value={gaMeasurementId} 
-                        onChange={e => setGaMeasurementId(e.target.value)} 
-                        style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} 
-                      />
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          analytics.setMeasurementId(gaMeasurementId);
-                          alert(language === 'en' ? 'GA4 Measurement ID saved!' : 'GA4 Mess-ID erfolgreich gespeichert!');
-                        }} 
-                        className="btn-primary" 
-                        style={{ padding: '0.6rem 1rem', fontSize: '0.85rem' }}
-                      >
-                        {t('save', 'Speichern')}
-                      </button>
-                    </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
-                      {language === 'en' ? 'Enter your Google Analytics 4 Measurement ID to send anonymized user interaction events.' : 'Trage hier deine Google Analytics 4 Mess-ID ein, um anonyme Nutzungsstatistiken auszuwerten.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* 6. SUB-VIEW: ABOUT */}
           {settingsView === 'about' && (
@@ -6354,6 +6314,91 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             >
               {t('cancel', 'Abbrechen')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM PROMPT MODAL FOR ADDING NEW VALUES */}
+      {promptModal.isOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1.5rem'
+        }}>
+          <div className="glass-panel" style={{
+            width: '100%',
+            maxWidth: '400px',
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-glass)',
+            borderRadius: 'var(--radius-md)'
+          }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+              {promptModal.title}
+            </h3>
+            <input 
+              type="text" 
+              autoFocus
+              value={promptModal.value} 
+              onChange={e => setPromptModal(prev => ({ ...prev, value: e.target.value }))}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  promptModal.onSubmit(promptModal.value);
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--accent-primary)',
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                fontSize: '1rem',
+                outline: 'none'
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button 
+                type="button" 
+                onClick={promptModal.onCancel}
+                style={{
+                  padding: '0.6rem 1.2rem',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-tertiary)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-glass)',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                {t('cancel', 'Abbrechen')}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => promptModal.onSubmit(promptModal.value)}
+                className="btn-primary"
+                style={{
+                  padding: '0.6rem 1.4rem',
+                  fontWeight: 600
+                }}
+              >
+                {t('save', 'Speichern')}
+              </button>
+            </div>
           </div>
         </div>
       )}
