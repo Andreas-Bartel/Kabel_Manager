@@ -6513,21 +6513,21 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
-              background: '#1a1d30',
+              background: 'var(--bg-secondary)',
               border: '1px solid var(--border-glass)',
-              boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.8)',
-              color: '#ffffff'
+              boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.5)',
+              color: 'var(--text-primary)'
             }}
           >
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                 {selectModal.title}
               </h3>
               <button 
                 type="button" 
                 onClick={() => setSelectModal(prev => ({ ...prev, isOpen: false }))}
-                style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: '0.2rem' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem' }}
               >
                 <X size={20} />
               </button>
@@ -6545,7 +6545,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   borderRadius: 'var(--radius-sm)',
                   background: selectModal.value === '' ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
                   border: selectModal.value === '' ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                  color: selectModal.value === '' ? 'var(--accent-primary)' : '#cbd5e1',
+                  color: selectModal.value === '' ? 'var(--accent-primary)' : 'var(--text-secondary)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -6573,7 +6573,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       borderRadius: 'var(--radius-sm)',
                       background: isSelected ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
                       border: isSelected ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                      color: '#ffffff',
+                      color: 'var(--text-primary)',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
