@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer, Settings, ArrowLeft, Home, Folder, Plug, Zap, Globe } from 'lucide-react';
+import { Cable as CableIcon, Layers, QrCode, Search, ShieldCheck, CheckCircle2, AlertTriangle, XCircle, Plus, Trash2, Link, Link2Off, Info, Sun, Moon, Camera, Upload, Copy, RefreshCw, Printer, Settings, ArrowLeft, Home, Folder, Plug, Zap, Globe, ChevronDown, Check, X } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { useLanguage } from './contexts/i18n/application/LanguageContext';
 import { Cable, Device, StorageLocation, buildLocationPath, checkPowerCompatibility, CompatibilityResult, ImageAttachment, PowerOutput } from './contexts/inventory/domain/types';
@@ -140,6 +140,119 @@ export default function App() {
     onSubmit: () => {},
     onCancel: () => {}
   });
+
+  // Custom Select Modal State (Ersetzt ungestylte/dunkle native Android Select-Pickers)
+  const [selectModal, setSelectModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    options: string[];
+    value: string;
+    onSelect: (val: string) => void;
+    allowAddNew?: boolean;
+    onAddNew?: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    options: [],
+    value: '',
+    onSelect: () => {},
+    allowAddNew: false
+  });
+
+  const openPromptForAddNew = (
+    field: string,
+    optionsList: string[],
+    setList: (newList: string[]) => void,
+    storageKey: string,
+    setFormValue: (v: string) => void
+  ) => {
+    const promptTitle = language === 'en' ? `Enter new value for "${field}":` : `Neuen Wert für "${field}" eingeben:`;
+    setPromptModal({
+      isOpen: true,
+      title: promptTitle,
+      value: '',
+      onSubmit: (newValue: string) => {
+        if (newValue && newValue.trim()) {
+          const trimmed = newValue.trim();
+          if (!optionsList.includes(trimmed)) {
+            const updated = [...optionsList, trimmed];
+            setList(updated);
+            localStorage.setItem(storageKey, JSON.stringify(updated));
+            setFormValue(trimmed);
+          } else {
+            setFormValue(trimmed);
+          }
+        }
+        setPromptModal(prev => ({ ...prev, isOpen: false }));
+      },
+      onCancel: () => {
+        setPromptModal(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const openCustomSelect = (
+    title: string,
+    value: string,
+    optionsList: string[],
+    onSelectValue: (selectedVal: string) => void,
+    onAddNewValue?: () => void
+  ) => {
+    setSelectModal({
+      isOpen: true,
+      title,
+      options: optionsList,
+      value: value,
+      onSelect: (val) => {
+        setSelectModal(prev => ({ ...prev, isOpen: false }));
+        onSelectValue(val);
+      },
+      allowAddNew: !!onAddNewValue,
+      onAddNew: onAddNewValue ? () => {
+        setSelectModal(prev => ({ ...prev, isOpen: false }));
+        onAddNewValue();
+      } : undefined
+    });
+  };
+
+  const renderSelectTrigger = (
+    label: string,
+    value: string,
+    optionsList: string[],
+    onSelectValue: (selectedVal: string) => void,
+    onAddNewValue?: () => void,
+    placeholder: string = '-- Keine Angabe --',
+    customStyle: React.CSSProperties = {}
+  ) => {
+    const displayVal = value ? formatDisplayValue(value, language) : t('no_specification', placeholder);
+    
+    return (
+      <button
+        type="button"
+        onClick={() => openCustomSelect(label, value, optionsList, onSelectValue, onAddNewValue)}
+        style={{
+          width: '100%',
+          padding: '0.65rem 0.8rem',
+          borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border-glass)',
+          background: 'var(--bg-tertiary)',
+          color: value ? 'var(--text-primary)' : 'var(--text-muted)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          fontSize: '0.9rem',
+          textAlign: 'left',
+          ...customStyle
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {displayVal}
+        </span>
+        <ChevronDown size={16} style={{ color: 'var(--text-muted)', flexShrink: 0, marginLeft: '0.4rem' }} />
+      </button>
+    );
+  };
 
   const [inventoryTypeFilter, setInventoryTypeFilter] = useState<'all' | 'cables' | 'chargers' | 'devices'>('all');
   const [inventoryLocationFilter, setInventoryLocationFilter] = useState<string | null>(null);
@@ -2989,20 +3102,11 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_type_1', 'Stecker-Typ 1')}</label>
-                <select value={cabConnectorType1} onChange={e => handleSelectChange('Stecker-Typ 1', e.target.value, connectors, setConnectors, 'list_connectors', setCabConnectorType1)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  {connectors.map(c => <option key={c} value={c}>{formatDisplayValue(c, language)}</option>)}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                </select>
+                {renderSelectTrigger(t('connector_type_1', 'Stecker-Typ 1'), cabConnectorType1, connectors, setCabConnectorType1, () => openPromptForAddNew('Stecker-Typ 1', connectors, setConnectors, 'list_connectors', setCabConnectorType1))}
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('standard_connector_1', 'Standard (Stecker 1)')}</label>
-                <select value={cabCableStandard1} onChange={e => handleCableStandardSelect(1, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                  {(cableStandardGroups[getConnectorFamily(cabConnectorType1)] || []).map(u => (
-                    <option key={u} value={u}>{formatDisplayValue(u, language)}</option>
-                  ))}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                </select>
+                {renderSelectTrigger(t('standard_connector_1', 'Standard (Stecker 1)'), cabCableStandard1, cableStandardGroups[getConnectorFamily(cabConnectorType1)] || [], setCabCableStandard1, () => openPromptForAddNew('Standard (Stecker 1)', cableStandardGroups[getConnectorFamily(cabConnectorType1)] || [], (updated) => setCableStandardGroups(prev => ({ ...prev, [getConnectorFamily(cabConnectorType1)]: updated })), 'list_standards_' + getConnectorFamily(cabConnectorType1), setCabCableStandard1))}
               </div>
             </div>
 
@@ -3010,20 +3114,11 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_type_2', 'Stecker-Typ 2')}</label>
-                <select value={cabConnectorType2} onChange={e => handleSelectChange('Stecker-Typ 2', e.target.value, connectors, setConnectors, 'list_connectors', setCabConnectorType2)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  {connectors.map(c => <option key={c} value={c}>{formatDisplayValue(c, language)}</option>)}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                </select>
+                {renderSelectTrigger(t('connector_type_2', 'Stecker-Typ 2'), cabConnectorType2, connectors, setCabConnectorType2, () => openPromptForAddNew('Stecker-Typ 2', connectors, setConnectors, 'list_connectors', setCabConnectorType2))}
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('standard_connector_2', 'Standard (Stecker 2)')}</label>
-                <select value={cabCableStandard2} onChange={e => handleCableStandardSelect(2, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                  {(cableStandardGroups[getConnectorFamily(cabConnectorType2)] || []).map(u => (
-                    <option key={u} value={u}>{formatDisplayValue(u, language)}</option>
-                  ))}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                </select>
+                {renderSelectTrigger(t('standard_connector_2', 'Standard (Stecker 2)'), cabCableStandard2, cableStandardGroups[getConnectorFamily(cabConnectorType2)] || [], setCabCableStandard2, () => openPromptForAddNew('Standard (Stecker 2)', cableStandardGroups[getConnectorFamily(cabConnectorType2)] || [], (updated) => setCableStandardGroups(prev => ({ ...prev, [getConnectorFamily(cabConnectorType2)]: updated })), 'list_standards_' + getConnectorFamily(cabConnectorType2), setCabCableStandard2))}
               </div>
             </div>
 
@@ -3031,11 +3126,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('length', 'Kabellänge')}</label>
-                <select value={cabLength} onChange={e => handleSelectChange('Kabellänge', e.target.value, lengths, setLengths, 'list_lengths', setCabLength)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                  {lengths.map(l => <option key={l} value={l}>{l}</option>)}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                </select>
+                {renderSelectTrigger(t('length', 'Kabellänge'), cabLength, lengths, setCabLength, () => openPromptForAddNew('Kabellänge', lengths, setLengths, 'list_lengths', setCabLength))}
               </div>
               <div>
                 {/* Platzhalter */}
@@ -3883,20 +3974,13 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <div style={{ display: 'grid', gridTemplateColumns: showDevPort2 ? '1fr 1fr' : '1fr', gap: '1rem' }}>
               <div>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_port_1', 'Anschluss (Port 1)')}</label>
-                <select value={devConnector} onChange={e => handleSelectChange(t('connector_port_1', 'Anschluss (Port 1)'), e.target.value, connectors, setConnectors, 'list_connectors', setDevConnector)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', colorScheme: 'dark' }}>
-                  {connectors.map(c => <option key={c} value={c} style={{ background: '#121420', color: '#ffffff' }}>{formatDisplayValue(c, language)}</option>)}
-                  <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold', background: '#121420' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                </select>
+                {renderSelectTrigger(t('connector_port_1', 'Anschluss (Port 1)'), devConnector, connectors, setDevConnector, () => openPromptForAddNew(t('connector_port_1', 'Anschluss (Port 1)'), connectors, setConnectors, 'list_connectors', setDevConnector))}
               </div>
               {showDevPort2 && (
                 <div>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_port_2', 'Anschluss (Port 2)')}</label>
                   <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                    <select value={devConnector2} onChange={e => handleSelectChange(t('connector_port_2', 'Anschluss (Port 2)'), e.target.value, connectors, setConnectors, 'list_connectors', setDevConnector2)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', colorScheme: 'dark' }}>
-                      <option value="" style={{ background: '#121420', color: '#ffffff' }}>-- {t('none', 'Keiner')} --</option>
-                      {connectors.map(c => <option key={c} value={c} style={{ background: '#121420', color: '#ffffff' }}>{formatDisplayValue(c, language)}</option>)}
-                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold', background: '#121420' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                    </select>
+                    {renderSelectTrigger(t('connector_port_2', 'Anschluss (Port 2)'), devConnector2, connectors, setDevConnector2, () => openPromptForAddNew(t('connector_port_2', 'Anschluss (Port 2)'), connectors, setConnectors, 'list_connectors', setDevConnector2), '-- ' + t('none', 'Keiner') + ' --', { flex: 1 })}
                     <button type="button" onClick={() => { setShowDevPort2(false); setDevConnector2(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                   </div>
                 </div>
@@ -3928,11 +4012,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     <div>
                       <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('manufacturer', 'Hersteller')}</label>
                       <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                        <select value={devBrand} onChange={e => handleSelectChange(t('manufacturer', 'Hersteller'), e.target.value, brands, setBrands, 'list_brands', setDevBrand)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                          <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                          {brands.map(b => <option key={b} value={b}>{formatDisplayValue(b, language)}</option>)}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                        </select>
+                        {renderSelectTrigger(t('manufacturer', 'Hersteller'), devBrand, brands, setDevBrand, () => openPromptForAddNew(t('manufacturer', 'Hersteller'), brands, setBrands, 'list_brands', setDevBrand), '-- Keine Angabe --', { flex: 1 })}
                         <button type="button" onClick={() => { setExpandedDevProps(p => ({ ...p, brand: false })); setDevBrand(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                       </div>
                     </div>
@@ -3945,11 +4025,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       <div key={prop.id}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                          <select value={prop.val} onChange={e => handleSelectChange(prop.label, e.target.value, prop.list, prop.setList, prop.key, prop.setVal)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                            <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                            {prop.list.map(x => <option key={x} value={x}>{formatDisplayValue(x, language)}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                          </select>
+                          {renderSelectTrigger(prop.label, prop.val, prop.list, prop.setVal, () => openPromptForAddNew(prop.label, prop.list, prop.setList, prop.key, prop.setVal), '-- Keine Angabe --', { flex: 1 })}
                           <button type="button" onClick={() => { setExpandedDevProps(p => ({ ...p, [prop.id]: false })); prop.setVal(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                         </div>
                       </div>
@@ -6398,6 +6474,146 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               >
                 {t('save', 'Speichern')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CUSTOM SELECT MODAL (Ersetzt ungestylte/dunkle native Android Select-Pickers) */}
+      {selectModal.isOpen && (
+        <div 
+          onClick={() => setSelectModal(prev => ({ ...prev, isOpen: false }))}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            zIndex: 9998,
+            padding: '0'
+          }}
+        >
+          <div 
+            onClick={e => e.stopPropagation()}
+            className="glass-panel" 
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              maxHeight: '80vh',
+              borderTopLeftRadius: 'var(--radius-lg)',
+              borderTopRightRadius: 'var(--radius-lg)',
+              borderBottomLeftRadius: 0,
+              borderBottomRightRadius: 0,
+              padding: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+              background: '#1a1d30',
+              border: '1px solid var(--border-glass)',
+              boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.8)',
+              color: '#ffffff'
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>
+                {selectModal.title}
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setSelectModal(prev => ({ ...prev, isOpen: false }))}
+                style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: '0.2rem' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Options List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', maxHeight: '55vh', paddingRight: '0.2rem' }}>
+              {/* Option: Keine Angabe */}
+              <button
+                type="button"
+                onClick={() => selectModal.onSelect('')}
+                style={{
+                  width: '100%',
+                  padding: '0.8rem 1rem',
+                  borderRadius: 'var(--radius-sm)',
+                  background: selectModal.value === '' ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
+                  border: selectModal.value === '' ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                  color: selectModal.value === '' ? 'var(--accent-primary)' : '#cbd5e1',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  fontWeight: selectModal.value === '' ? 700 : 400,
+                  fontSize: '0.95rem',
+                  textAlign: 'left'
+                }}
+              >
+                <span>{t('no_specification', '-- Keine Angabe --')}</span>
+                {selectModal.value === '' && <Check size={18} style={{ color: 'var(--accent-primary)' }} />}
+              </button>
+
+              {/* Options list */}
+              {selectModal.options.map(opt => {
+                const isSelected = selectModal.value === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => selectModal.onSelect(opt)}
+                    style={{
+                      width: '100%',
+                      padding: '0.85rem 1rem',
+                      borderRadius: 'var(--radius-sm)',
+                      background: isSelected ? 'var(--accent-glow)' : 'var(--bg-tertiary)',
+                      border: isSelected ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                      color: '#ffffff',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      fontWeight: isSelected ? 700 : 500,
+                      fontSize: '0.95rem',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <span>{formatDisplayValue(opt, language)}</span>
+                    {isSelected && <Check size={18} style={{ color: 'var(--accent-primary)' }} />}
+                  </button>
+                );
+              })}
+
+              {/* Add New Value Option */}
+              {selectModal.allowAddNew && selectModal.onAddNew && (
+                <button
+                  type="button"
+                  onClick={selectModal.onAddNew}
+                  style={{
+                    width: '100%',
+                    padding: '0.85rem 1rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(99, 102, 241, 0.15)',
+                    border: '1px dashed var(--accent-primary)',
+                    color: '#818cf8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    marginTop: '0.4rem'
+                  }}
+                >
+                  <Plus size={18} />
+                  <span>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
