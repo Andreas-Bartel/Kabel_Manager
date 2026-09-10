@@ -145,7 +145,7 @@ export default function App() {
   const [selectModal, setSelectModal] = useState<{
     isOpen: boolean;
     title: string;
-    options: string[];
+    options: { label: string; value: string }[];
     value: string;
     onSelect: (val: string) => void;
     allowAddNew?: boolean;
@@ -194,14 +194,17 @@ export default function App() {
   const openCustomSelect = (
     title: string,
     value: string,
-    optionsList: string[],
+    optionsList: (string | { label: string; value: string })[],
     onSelectValue: (selectedVal: string) => void,
     onAddNewValue?: () => void
   ) => {
+    const formattedOptions = optionsList.map(opt =>
+      typeof opt === 'string' ? { label: formatDisplayValue(opt, language), value: opt } : opt
+    );
     setSelectModal({
       isOpen: true,
       title,
-      options: optionsList,
+      options: formattedOptions,
       value: value,
       onSelect: (val) => {
         setSelectModal(prev => ({ ...prev, isOpen: false }));
@@ -218,13 +221,15 @@ export default function App() {
   const renderSelectTrigger = (
     label: string,
     value: string,
-    optionsList: string[],
+    optionsList: (string | { label: string; value: string })[],
     onSelectValue: (selectedVal: string) => void,
     onAddNewValue?: () => void,
     placeholder: string = '-- Keine Angabe --',
     customStyle: React.CSSProperties = {}
   ) => {
-    const displayVal = value ? formatDisplayValue(value, language) : t('no_specification', placeholder);
+    const formattedOpts = optionsList.map(opt => typeof opt === 'string' ? { label: formatDisplayValue(opt, language), value: opt } : opt);
+    const foundOpt = formattedOpts.find(o => o.value === value);
+    const displayVal = foundOpt ? foundOpt.label : (value ? formatDisplayValue(value, language) : t('no_specification', placeholder));
     
     return (
       <button
@@ -3063,12 +3068,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           <form onSubmit={handleCreateLocation} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h3>{t('add_location', 'Lagerort anlegen')}</h3>
             <input type="text" placeholder={t('name', 'Name')} value={locName} onChange={e => setLocName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} required />
-            <select value={locParent} onChange={e => setLocParent(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-              <option value="">{t('no_parent_location', '-- Kein übergeordneter Ort --')}</option>
-              {locations.map(l => (
-                <option key={l.id} value={l.id}>{l.name}</option>
-              ))}
-            </select>
+            {renderSelectTrigger(t('no_parent_location', 'Übergeordneter Ort'), locParent, locations.map(l => ({ label: l.name, value: l.id })), setLocParent, undefined, '-- Kein übergeordneter Ort --')}
             <input type="text" placeholder={t('description', 'Beschreibung')} value={locDesc} onChange={e => setLocDesc(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
             <button type="submit" className="btn-primary">{t('location_created', 'Ort erstellen')}</button>
           </form>
@@ -3148,11 +3148,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('brand', 'Marke')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                      <select value={cabBrand} onChange={e => handleSelectChange('Marke', e.target.value, brands, setBrands, 'list_brands', setCabBrand)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                        {brands.map(b => <option key={b} value={b}>{formatDisplayValue(b, language)}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                      </select>
+                      {renderSelectTrigger(t('brand', 'Marke'), cabBrand, brands, setCabBrand, () => openPromptForAddNew(t('brand', 'Marke'), brands, setBrands, 'list_brands', setCabBrand), '-- Keine Angabe --', { flex: 1 })}
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, brand: false })); setCabBrand(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
                   </div>
@@ -3161,11 +3157,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('color', 'Farbe')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                      <select value={cabColor} onChange={e => handleSelectChange('Farbe', e.target.value, colors, setColors, 'list_colors', setCabColor)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                        {colors.map(c => <option key={c} value={c}>{formatDisplayValue(c, language)}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                      </select>
+                      {renderSelectTrigger(t('color', 'Farbe'), cabColor, colors, setCabColor, () => openPromptForAddNew(t('color', 'Farbe'), colors, setColors, 'list_colors', setCabColor), '-- Keine Angabe --', { flex: 1 })}
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, color: false })); setCabColor(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
                   </div>
@@ -3174,11 +3166,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('condition', 'Zustand')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                      <select value={cabCondition} onChange={e => handleSelectChange('Zustand', e.target.value, conditions, setConditions, 'list_conditions', setCabCondition)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                        {conditions.map(c => <option key={c} value={c}>{formatDisplayValue(c, language)}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                      </select>
+                      {renderSelectTrigger(t('condition', 'Zustand'), cabCondition, conditions, setCabCondition, () => openPromptForAddNew(t('condition', 'Zustand'), conditions, setConditions, 'list_conditions', setCabCondition), '-- Keine Angabe --', { flex: 1 })}
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, condition: false })); setCabCondition(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
                   </div>
@@ -3187,11 +3175,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('material', 'Material')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                      <select value={cabMaterial} onChange={e => handleSelectChange('Material', e.target.value, materials, setMaterials, 'list_materials', setCabMaterial)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                        {materials.map(m => <option key={m} value={m}>{formatDisplayValue(m, language)}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                      </select>
+                      {renderSelectTrigger(t('material', 'Material'), cabMaterial, materials, setCabMaterial, () => openPromptForAddNew(t('material', 'Material'), materials, setMaterials, 'list_materials', setCabMaterial), '-- Keine Angabe --', { flex: 1 })}
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, material: false })); setCabMaterial(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
                   </div>
@@ -3200,11 +3184,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('data_rate', 'Datenrate')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                      <select value={cabDataRate} onChange={e => handleSelectChange('Datenrate', e.target.value, dataRates, setDataRates, 'list_data_rates', setCabDataRate)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                        {dataRates.map(d => <option key={d} value={d}>{formatDisplayValue(d, language)}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                      </select>
+                      {renderSelectTrigger(t('data_rate', 'Datenrate'), cabDataRate, dataRates, setCabDataRate, () => openPromptForAddNew(t('data_rate', 'Datenrate'), dataRates, setDataRates, 'list_data_rates', setCabDataRate), '-- Keine Angabe --', { flex: 1 })}
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, dataRate: false })); setCabDataRate(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
                   </div>
@@ -3213,11 +3193,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('charging_power', 'Ladeleistung')}</label>
                     <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                      <select value={cabChargingPower} onChange={e => handleSelectChange('Ladeleistung', e.target.value, chargingPowers, setChargingPowers, 'list_charging_powers', setCabChargingPower)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                        <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                        {chargingPowers.map(p => <option key={p} value={p}>{formatDisplayValue(p, language)}</option>)}
-                        <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                      </select>
+                      {renderSelectTrigger(t('charging_power', 'Ladeleistung'), cabChargingPower, chargingPowers, setCabChargingPower, () => openPromptForAddNew(t('charging_power', 'Ladeleistung'), chargingPowers, setChargingPowers, 'list_charging_powers', setCabChargingPower), '-- Keine Angabe --', { flex: 1 })}
                       <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, chargingPower: false })); setCabChargingPower(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                     </div>
                   </div>
@@ -3228,32 +3204,25 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     <div key={prop.id}>
                       <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                       <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                        <select
-                          value={customPropValues[prop.id] || ''}
-                          onChange={e => handleSelectChange(
+                        {renderSelectTrigger(
+                          prop.label,
+                          customPropValues[prop.id] || '',
+                          prop.values,
+                          (val) => setCustomPropValues(prev => ({ ...prev, [prop.id]: val })),
+                          () => openPromptForAddNew(
                             prop.label,
-                            e.target.value,
                             prop.values,
-                            (updatedValuesAction) => {
-                              const updatedProps = customProperties.map(p => {
-                                if (p.id === prop.id) {
-                                  const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
-                                  return { ...p, values: newValues };
-                                }
-                                return p;
-                              });
+                            (newVals) => {
+                              const updatedProps = customProperties.map(p => p.id === prop.id ? { ...p, values: newVals } : p);
                               setCustomProperties(updatedProps);
                               localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
                             },
                             `list_custom_prop_${prop.id}`,
                             (val) => setCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
-                          )}
-                          style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-                        >
-                          <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                          {prop.values.map(v => <option key={v} value={v}>{formatDisplayValue(v, language)}</option>)}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                        </select>
+                          ),
+                          '-- Keine Angabe --',
+                          { flex: 1 }
+                        )}
                         <button type="button" onClick={() => { setExpandedCabProps(p => ({ ...p, [prop.id]: false })); setCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                       </div>
                     </div>
@@ -3560,13 +3529,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1.2fr 1fr 1fr', gap: '0.5rem' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Stecker-Typ</label>
-                    <select value={cabFixedConnector} onChange={e => setCabFixedConnector(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }}>
-                      <option value="USB-C">USB-C</option>
-                      <option value="Micro-USB">Micro-USB</option>
-                      <option value="Lightning">Lightning</option>
-                      <option value="DC-Jack">DC-Jack</option>
-                      <option value="Other">Andere</option>
-                    </select>
+                    {renderSelectTrigger('Stecker-Typ', cabFixedConnector, ['USB-C', 'Micro-USB', 'Lightning', 'DC-Jack', 'Other'], setCabFixedConnector, undefined, '-- Stecker-Typ --', { height: '32px', padding: '0.4rem' })}
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Länge</label>
@@ -3592,30 +3555,15 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Ports</span>
                 {ports.map((p, idx) => (
                   <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.4rem', alignItems: 'center' }}>
-                    <select value={p.portType} onChange={e => {
-                      if (e.target.value === '__ADD_NEW__') {
-                        const newValue = prompt(`Neuen Port-Typ eingeben:`);
-                        if (newValue && newValue.trim()) {
-                          const trimmed = newValue.trim();
-                          if (!connectors.includes(trimmed)) {
-                            const updatedConnectors = [...connectors, trimmed];
-                            setConnectors(updatedConnectors);
-                            localStorage.setItem('list_connectors', JSON.stringify(updatedConnectors));
-                          }
-                          const updatedPorts = [...ports];
-                          updatedPorts[idx].portType = trimmed;
-                          setPorts(updatedPorts);
-                        }
-                      } else {
-                        const updated = [...ports];
-                        updated[idx].portType = e.target.value;
-                        setPorts(updated);
-                      }
-                    }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', colorScheme: 'dark' }}>
-                      <option value="" style={{ background: '#121420', color: '#ffffff' }}>-- Port-Typ --</option>
-                      {connectors.map(c => <option key={c} value={c} style={{ background: '#121420', color: '#ffffff' }}>{formatDisplayValue(c, language)}</option>)}
-                      <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold', background: '#121420' }}>+ {t('add_new_value', 'Neuen Wert hinzufügen...')}</option>
-                    </select>
+                    {renderSelectTrigger('Port-Typ', p.portType, connectors, (val) => {
+                      const updatedPorts = [...ports];
+                      updatedPorts[idx].portType = val;
+                      setPorts(updatedPorts);
+                    }, () => openPromptForAddNew('Port-Typ', connectors, setConnectors, 'list_connectors', (val) => {
+                      const updatedPorts = [...ports];
+                      updatedPorts[idx].portType = val;
+                      setPorts(updatedPorts);
+                    }), '-- Port-Typ --', { fontSize: '0.8rem', padding: '0.4rem' })}
                     
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                       <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="Watt" value={p.wattage || ''} onChange={e => {
@@ -3662,11 +3610,15 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       <div key={prop.id}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                          <select value={prop.val} onChange={e => handleSelectChange(prop.label, e.target.value, prop.list, prop.setList, prop.key, prop.setVal)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                            <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                            {prop.list.map(x => <option key={x} value={x}>{formatDisplayValue(x, language)}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                          </select>
+                          <div style={{ flex: 1 }}>
+                            {renderSelectTrigger(
+                              prop.label,
+                              prop.val,
+                              prop.list,
+                              prop.setVal,
+                              () => openPromptForAddNew(prop.label, prop.list, prop.setList, prop.key, prop.setVal)
+                            )}
+                          </div>
                           <button type="button" onClick={() => { setExpandedChargerProps(p => ({ ...p, [prop.id]: false })); prop.setVal(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                         </div>
                       </div>
@@ -3680,32 +3632,31 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       <div key={prop.id}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                          <select
-                            value={customPropValues[prop.id] || ''}
-                            onChange={e => handleSelectChange(
+                          <div style={{ flex: 1 }}>
+                            {renderSelectTrigger(
                               prop.label,
-                              e.target.value,
+                              customPropValues[prop.id] || '',
                               prop.values,
-                              (updatedValuesAction) => {
-                                const updatedProps = customProperties.map(p => {
-                                  if (p.id === prop.id) {
-                                    const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
-                                    return { ...p, values: newValues };
-                                  }
-                                  return p;
-                                });
-                                setCustomProperties(updatedProps);
-                                localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
-                              },
-                              `list_custom_prop_${prop.id}`,
-                              (val) => setCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                              (val) => setCustomPropValues(prev => ({ ...prev, [prop.id]: val })),
+                              () => openPromptForAddNew(
+                                prop.label,
+                                prop.values,
+                                (updatedValuesAction) => {
+                                  const updatedProps = customProperties.map(p => {
+                                    if (p.id === prop.id) {
+                                      const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
+                                      return { ...p, values: newValues };
+                                    }
+                                    return p;
+                                  });
+                                  setCustomProperties(updatedProps);
+                                  localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
+                                },
+                                `list_custom_prop_${prop.id}`,
+                                (val) => setCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                              )
                             )}
-                            style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-                          >
-                            <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                            {prop.values.map(v => <option key={v} value={v}>{formatDisplayValue(v, language)}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                          </select>
+                          </div>
                           <button type="button" onClick={() => { setExpandedChargerProps(p => ({ ...p, [prop.id]: false })); setCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                         </div>
                       </div>
@@ -4039,32 +3990,31 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       <div key={prop.id}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                         <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                          <select
-                            value={devCustomPropValues[prop.id] || ''}
-                            onChange={e => handleSelectChange(
+                          <div style={{ flex: 1 }}>
+                            {renderSelectTrigger(
                               prop.label,
-                              e.target.value,
+                              devCustomPropValues[prop.id] || '',
                               prop.values,
-                              (updatedValuesAction) => {
-                                const updatedProps = customProperties.map(p => {
-                                  if (p.id === prop.id) {
-                                    const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
-                                    return { ...p, values: newValues };
-                                  }
-                                  return p;
-                                });
-                                setCustomProperties(updatedProps);
-                                localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
-                              },
-                              `list_custom_prop_${prop.id}`,
-                              (val) => setDevCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                              (val) => setDevCustomPropValues(prev => ({ ...prev, [prop.id]: val })),
+                              () => openPromptForAddNew(
+                                prop.label,
+                                prop.values,
+                                (updatedValuesAction) => {
+                                  const updatedProps = customProperties.map(p => {
+                                    if (p.id === prop.id) {
+                                      const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
+                                      return { ...p, values: newValues };
+                                    }
+                                    return p;
+                                  });
+                                  setCustomProperties(updatedProps);
+                                  localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
+                                },
+                                `list_custom_prop_${prop.id}`,
+                                (val) => setDevCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                              )
                             )}
-                            style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-                          >
-                            <option value="">{t('no_specification', '-- Keine Angabe --')}</option>
-                            {prop.values.map(v => <option key={v} value={v}>{formatDisplayValue(v, language)}</option>)}
-                            <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{t('add_new_value', '+ Neuen Wert hinzufügen...')}</option>
-                          </select>
+                          </div>
                           <button type="button" onClick={() => { setExpandedDevProps(p => ({ ...p, [prop.id]: false })); setDevCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                         </div>
                       </div>
@@ -4501,16 +4451,15 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1rem' }}>
                       <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('assign_existing_property', 'Vorhandene Eigenschaft dieser Komponente zuordnen')}</label>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <select
-                          value={selectedPropToAssign}
-                          onChange={e => setSelectedPropToAssign(e.target.value)}
-                          style={{ flex: 1, padding: '0.5rem', background: 'var(--bg-tertiary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}
-                        >
-                          <option value="">{t('select_property', '-- Eigenschaft wählen --')}</option>
-                          {unassignedProps.map(p => (
-                            <option key={p.id} value={p.id}>{p.label}</option>
-                          ))}
-                        </select>
+                        {renderSelectTrigger(
+                          t('assign_existing_property', 'Vorhandene Eigenschaft dieser Komponente zuordnen'),
+                          selectedPropToAssign,
+                          unassignedProps.map(p => ({ label: p.label, value: p.id })),
+                          setSelectedPropToAssign,
+                          undefined,
+                          '-- Eigenschaft wählen --',
+                          { flex: 1 }
+                        )}
                         <button
                           type="button"
                           onClick={() => {
@@ -5199,13 +5148,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1.2fr 1fr 1fr', gap: '0.5rem' }}>
                           <div>
                             <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('connector_type', 'Stecker-Typ')}</label>
-                            <select value={editFixedConnector} onChange={e => setEditFixedConnector(e.target.value)} style={{ width: '100%', padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', height: '32px' }}>
-                              <option value="USB-C">USB-C</option>
-                              <option value="Micro-USB">Micro-USB</option>
-                              <option value="Lightning">Lightning</option>
-                              <option value="DC-Jack">DC-Jack</option>
-                              <option value="Other">{language === 'en' ? 'Other' : 'Andere'}</option>
-                            </select>
+                            {renderSelectTrigger('Stecker-Typ', editFixedConnector, ['USB-C', 'Micro-USB', 'Lightning', 'DC-Jack', 'Other'], setEditFixedConnector, undefined, '-- Stecker-Typ --', { height: '32px', padding: '0.4rem' })}
                           </div>
                           <div>
                             <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('length', 'Länge')}</label>
@@ -5230,30 +5173,15 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Ports</span>
                         {editPorts.map((p, idx) => (
                           <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr auto', gap: '0.4rem', alignItems: 'center' }}>
-                            <select value={p.portType} onChange={e => {
-                              if (e.target.value === '__ADD_NEW__') {
-                                const newValue = prompt(`Neuen Port-Typ eingeben:`);
-                                if (newValue && newValue.trim()) {
-                                  const trimmed = newValue.trim();
-                                  if (!connectors.includes(trimmed)) {
-                                    const updatedConnectors = [...connectors, trimmed];
-                                    setConnectors(updatedConnectors);
-                                    localStorage.setItem('list_connectors', JSON.stringify(updatedConnectors));
-                                  }
-                                  const updatedPorts = [...editPorts];
-                                  updatedPorts[idx].portType = trimmed;
-                                  setEditPorts(updatedPorts);
-                                }
-                              } else {
-                                const updated = [...editPorts];
-                                updated[idx].portType = e.target.value;
-                                setEditPorts(updated);
-                              }
-                            }} style={{ padding: '0.4rem', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', colorScheme: 'dark' }}>
-                              <option value="" style={{ background: '#121420', color: '#ffffff' }}>-- Port-Typ --</option>
-                              {connectors.map(c => <option key={c} value={c} style={{ background: '#121420', color: '#ffffff' }}>{formatDisplayValue(c, language)}</option>)}
-                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold', background: '#121420' }}>+ {t('add_new_value', 'Neuen Wert hinzufügen...')}</option>
-                            </select>
+                            {renderSelectTrigger('Port-Typ', p.portType, connectors, (val) => {
+                              const updated = [...editPorts];
+                              updated[idx].portType = val;
+                              setEditPorts(updated);
+                            }, () => openPromptForAddNew('Port-Typ', connectors, setConnectors, 'list_connectors', (val) => {
+                              const updated = [...editPorts];
+                              updated[idx].portType = val;
+                              setEditPorts(updated);
+                            }), '-- Port-Typ --', { fontSize: '0.8rem', padding: '0.4rem' })}
                             
                             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                               <input type="text" inputMode="numeric" pattern="[0-9]*" placeholder="Watt" value={p.wattage || ''} onChange={e => {
@@ -5280,51 +5208,29 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 1</label>
-                        <select value={editConnectorType1} onChange={e => handleSelectChange('Stecker-Typ 1', e.target.value, connectors, setConnectors, 'list_connectors', setEditConnectorType1)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                          {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                        </select>
+                        {renderSelectTrigger('Stecker-Typ 1', editConnectorType1, connectors, setEditConnectorType1, () => openPromptForAddNew('Stecker-Typ 1', connectors, setConnectors, 'list_connectors', setEditConnectorType1))}
                       </div>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 1)</label>
-                        <select value={editCableStandard1} onChange={e => handleCableStandardSelect(1, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                          <option value="">-- Keine Angabe --</option>
-                          {(cableStandardGroups[getConnectorFamily(editConnectorType1)] || []).map(u => (
-                            <option key={u} value={u}>{u}</option>
-                          ))}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                        </select>
+                        {renderSelectTrigger('Standard (Stecker 1)', editCableStandard1, cableStandardGroups[getConnectorFamily(editConnectorType1)] || [], setEditCableStandard1, () => openPromptForAddNew('Standard (Stecker 1)', cableStandardGroups[getConnectorFamily(editConnectorType1)] || [], (updated) => setCableStandardGroups(prev => ({ ...prev, [getConnectorFamily(editConnectorType1)]: updated })), 'list_standards_' + getConnectorFamily(editConnectorType1), setEditCableStandard1))}
                       </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 2</label>
-                        <select value={editConnectorType2} onChange={e => handleSelectChange('Stecker-Typ 2', e.target.value, connectors, setConnectors, 'list_connectors', setEditConnectorType2)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                          {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                        </select>
+                        {renderSelectTrigger('Stecker-Typ 2', editConnectorType2, connectors, setEditConnectorType2, () => openPromptForAddNew('Stecker-Typ 2', connectors, setConnectors, 'list_connectors', setEditConnectorType2))}
                       </div>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 2)</label>
-                        <select value={editCableStandard2} onChange={e => handleCableStandardSelect(2, e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                          <option value="">-- Keine Angabe --</option>
-                          {(cableStandardGroups[getConnectorFamily(editConnectorType2)] || []).map(u => (
-                            <option key={u} value={u}>{u}</option>
-                          ))}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                        </select>
+                        {renderSelectTrigger('Standard (Stecker 2)', editCableStandard2, cableStandardGroups[getConnectorFamily(editConnectorType2)] || [], setEditCableStandard2, () => openPromptForAddNew('Standard (Stecker 2)', cableStandardGroups[getConnectorFamily(editConnectorType2)] || [], (updated) => setCableStandardGroups(prev => ({ ...prev, [getConnectorFamily(editConnectorType2)]: updated })), 'list_standards_' + getConnectorFamily(editConnectorType2), setEditCableStandard2))}
                       </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kabellänge</label>
-                        <select value={editLength} onChange={e => handleSelectChange('Kabellänge', e.target.value, lengths, setLengths, 'list_lengths', setEditLength)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                          <option value="">-- Keine Angabe --</option>
-                          {lengths.map(l => <option key={l} value={l}>{l}</option>)}
-                          <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                        </select>
+                        {renderSelectTrigger('Kabellänge', editLength, lengths, setEditLength, () => openPromptForAddNew('Kabellänge', lengths, setLengths, 'list_lengths', setEditLength))}
                       </div>
                       <div />
                     </div>
@@ -5352,11 +5258,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Marke</label>
                           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            <select value={editBrand} onChange={e => handleSelectChange('Marke', e.target.value, brands, setBrands, 'list_brands', setEditBrand)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                              <option value="">-- Keine Angabe --</option>
-                              {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                            </select>
+                            <div style={{ flex: 1 }}>
+                              {renderSelectTrigger('Marke', editBrand, brands, setEditBrand, () => openPromptForAddNew('Marke', brands, setBrands, 'list_brands', setEditBrand))}
+                            </div>
                             <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, brand: false })); setEditBrand(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                           </div>
                         </div>
@@ -5365,11 +5269,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Farbe</label>
                           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            <select value={editColor} onChange={e => handleSelectChange('Farbe', e.target.value, colors, setColors, 'list_colors', setEditColor)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                              <option value="">-- Keine Angabe --</option>
-                              {colors.map(c => <option key={c} value={c}>{c}</option>)}
-                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                            </select>
+                            <div style={{ flex: 1 }}>
+                              {renderSelectTrigger('Farbe', editColor, colors, setEditColor, () => openPromptForAddNew('Farbe', colors, setColors, 'list_colors', setEditColor))}
+                            </div>
                             <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, color: false })); setEditColor(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                           </div>
                         </div>
@@ -5378,11 +5280,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Zustand</label>
                           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            <select value={editCondition} onChange={e => handleSelectChange('Zustand', e.target.value, conditions, setConditions, 'list_conditions', setEditCondition)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                              <option value="">-- Keine Angabe --</option>
-                              {conditions.map(c => <option key={c} value={c}>{c}</option>)}
-                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                            </select>
+                            <div style={{ flex: 1 }}>
+                              {renderSelectTrigger('Zustand', editCondition, conditions, setEditCondition, () => openPromptForAddNew('Zustand', conditions, setConditions, 'list_conditions', setEditCondition))}
+                            </div>
                             <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, condition: false })); setEditCondition(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                           </div>
                         </div>
@@ -5391,11 +5291,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Material</label>
                           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            <select value={editMaterial} onChange={e => handleSelectChange('Material', e.target.value, materials, setMaterials, 'list_materials', setEditMaterial)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                              <option value="">-- Keine Angabe --</option>
-                              {materials.map(m => <option key={m} value={m}>{m}</option>)}
-                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                            </select>
+                            <div style={{ flex: 1 }}>
+                              {renderSelectTrigger('Material', editMaterial, materials, setEditMaterial, () => openPromptForAddNew('Material', materials, setMaterials, 'list_materials', setEditMaterial))}
+                            </div>
                             <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, material: false })); setEditMaterial(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                           </div>
                         </div>
@@ -5404,11 +5302,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Datenrate</label>
                           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            <select value={editDataRate} onChange={e => handleSelectChange('Datenrate', e.target.value, dataRates, setDataRates, 'list_data_rates', setEditDataRate)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                              <option value="">-- Keine Angabe --</option>
-                              {dataRates.map(r => <option key={r} value={r}>{r}</option>)}
-                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                            </select>
+                            <div style={{ flex: 1 }}>
+                              {renderSelectTrigger('Datenrate', editDataRate, dataRates, setEditDataRate, () => openPromptForAddNew('Datenrate', dataRates, setDataRates, 'list_data_rates', setEditDataRate))}
+                            </div>
                             <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, dataRate: false })); setEditDataRate(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                           </div>
                         </div>
@@ -5417,11 +5313,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Ladeleistung</label>
                           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            <select value={editChargingPower} onChange={e => handleSelectChange('Ladeleistung', e.target.value, chargingPowers, setChargingPowers, 'list_charging_powers', setEditChargingPower)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                              <option value="">-- Keine Angabe --</option>
-                              {chargingPowers.map(p => <option key={p} value={p}>{p}</option>)}
-                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                            </select>
+                            <div style={{ flex: 1 }}>
+                              {renderSelectTrigger('Ladeleistung', editChargingPower, chargingPowers, setEditChargingPower, () => openPromptForAddNew('Ladeleistung', chargingPowers, setChargingPowers, 'list_charging_powers', setEditChargingPower))}
+                            </div>
                             <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, chargingPower: false })); setEditChargingPower(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                           </div>
                         </div>
@@ -5432,32 +5326,31 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           <div key={prop.id}>
                             <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                             <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                              <select
-                                value={editCustomPropValues[prop.id] || ''}
-                                onChange={e => handleSelectChange(
+                              <div style={{ flex: 1 }}>
+                                {renderSelectTrigger(
                                   prop.label,
-                                  e.target.value,
+                                  editCustomPropValues[prop.id] || '',
                                   prop.values,
-                                  (updatedValuesAction) => {
-                                    const updatedProps = customProperties.map(p => {
-                                      if (p.id === prop.id) {
-                                        const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
-                                        return { ...p, values: newValues };
-                                      }
-                                      return p;
-                                    });
-                                    setCustomProperties(updatedProps);
-                                    localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
-                                  },
-                                  `list_custom_prop_${prop.id}`,
-                                  (val) => setEditCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                                  (val) => setEditCustomPropValues(prev => ({ ...prev, [prop.id]: val })),
+                                  () => openPromptForAddNew(
+                                    prop.label,
+                                    prop.values,
+                                    (updatedValuesAction) => {
+                                      const updatedProps = customProperties.map(p => {
+                                        if (p.id === prop.id) {
+                                          const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
+                                          return { ...p, values: newValues };
+                                        }
+                                        return p;
+                                      });
+                                      setCustomProperties(updatedProps);
+                                      localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
+                                    },
+                                    `list_custom_prop_${prop.id}`,
+                                    (val) => setEditCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                                  )
                                 )}
-                                style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-                              >
-                                <option value="">-- Keine Angabe --</option>
-                                {prop.values.map(v => <option key={v} value={v}>{v}</option>)}
-                                <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                              </select>
+                              </div>
                               <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, [prop.id]: false })); setEditCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                             </div>
                           </div>
@@ -5892,19 +5785,16 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Port</label>
-                    <select value={editDevConnector} onChange={e => setEditDevConnector(e.target.value)} style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    {renderSelectTrigger('Port', editDevConnector, connectors, setEditDevConnector, () => openPromptForAddNew('Port', connectors, setConnectors, 'list_connectors', setEditDevConnector))}
                   </div>
 
                   {editDevShowPort2 && (
                     <div>
                       <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Port 2</label>
                       <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                        <select value={editDevConnector2} onChange={e => setEditDevConnector2(e.target.value)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                          <option value="">-- Keine Angabe --</option>
-                          {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
+                        <div style={{ flex: 1 }}>
+                          {renderSelectTrigger('Port 2', editDevConnector2, connectors, setEditDevConnector2, () => openPromptForAddNew('Port 2', connectors, setConnectors, 'list_connectors', setEditDevConnector2))}
+                        </div>
                         <button type="button" onClick={() => { setEditDevShowPort2(false); setEditDevConnector2(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                       </div>
                     </div>
@@ -5936,11 +5826,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Hersteller</label>
                           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            <select value={editDevManufacturer} onChange={e => handleSelectChange('Hersteller', e.target.value, brands, setBrands, 'list_brands', setEditDevManufacturer)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                              <option value="">-- Keine Angabe --</option>
-                              {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                              <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                            </select>
+                            <div style={{ flex: 1 }}>
+                              {renderSelectTrigger('Hersteller', editDevManufacturer, brands, setEditDevManufacturer, () => openPromptForAddNew('Hersteller', brands, setBrands, 'list_brands', setEditDevManufacturer))}
+                            </div>
                             <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, brand: false })); setEditDevManufacturer(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                           </div>
                         </div>
@@ -5953,11 +5841,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           <div key={prop.id}>
                             <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                             <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                              <select value={prop.val} onChange={e => handleSelectChange(prop.label, e.target.value, prop.list, prop.setList, prop.key, prop.setVal)} style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                                <option value="">-- Keine Angabe --</option>
-                                {prop.list.map(x => <option key={x} value={x}>{x}</option>)}
-                                <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                              </select>
+                              <div style={{ flex: 1 }}>
+                                {renderSelectTrigger(prop.label, prop.val, prop.list, prop.setVal, () => openPromptForAddNew(prop.label, prop.list, prop.setList, prop.key, prop.setVal))}
+                              </div>
                               <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, [prop.id]: false })); prop.setVal(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                             </div>
                           </div>
@@ -5971,32 +5857,31 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                           <div key={prop.id}>
                             <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{prop.label}</label>
                             <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                              <select
-                                value={editCustomPropValues[prop.id] || ''}
-                                onChange={e => handleSelectChange(
+                              <div style={{ flex: 1 }}>
+                                {renderSelectTrigger(
                                   prop.label,
-                                  e.target.value,
+                                  editCustomPropValues[prop.id] || '',
                                   prop.values,
-                                  (updatedValuesAction) => {
-                                    const updatedProps = customProperties.map(p => {
-                                      if (p.id === prop.id) {
-                                        const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
-                                        return { ...p, values: newValues };
-                                      }
-                                      return p;
-                                    });
-                                    setCustomProperties(updatedProps);
-                                    localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
-                                  },
-                                  `list_custom_prop_${prop.id}`,
-                                  (val) => setEditCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                                  (val) => setEditCustomPropValues(prev => ({ ...prev, [prop.id]: val })),
+                                  () => openPromptForAddNew(
+                                    prop.label,
+                                    prop.values,
+                                    (updatedValuesAction) => {
+                                      const updatedProps = customProperties.map(p => {
+                                        if (p.id === prop.id) {
+                                          const newValues = typeof updatedValuesAction === 'function' ? (updatedValuesAction as Function)(p.values) : updatedValuesAction;
+                                          return { ...p, values: newValues };
+                                        }
+                                        return p;
+                                      });
+                                      setCustomProperties(updatedProps);
+                                      localStorage.setItem('list_custom_properties', JSON.stringify(updatedProps));
+                                    },
+                                    `list_custom_prop_${prop.id}`,
+                                    (val) => setEditCustomPropValues(prev => ({ ...prev, [prop.id]: val }))
+                                  )
                                 )}
-                                style={{ flex: 1, padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-                              >
-                                <option value="">-- Keine Angabe --</option>
-                                {prop.values.map(v => <option key={v} value={v}>{v}</option>)}
-                                <option value="__ADD_NEW__" style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>+ Neuen Wert hinzufügen...</option>
-                              </select>
+                              </div>
                               <button type="button" onClick={() => { setEditExpandedProps(p => ({ ...p, [prop.id]: false })); setEditCustomPropValues(prev => { const c = { ...prev }; delete c[prop.id]; return c; }); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
                             </div>
                           </div>
@@ -6311,9 +6196,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     />
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('connector_type', 'Stecker / Port')}:</label>
-                      <select value={quickCreateConnector} onChange={e => setQuickCreateConnector(e.target.value)} style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem', background: 'var(--bg-primary)', border: '1px solid var(--border-glass)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)' }}>
-                        {connectors.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                      <div style={{ flex: 1 }}>
+                        {renderSelectTrigger(t('connector_type', 'Stecker / Port'), quickCreateConnector, connectors, setQuickCreateConnector, () => openPromptForAddNew(t('connector_type', 'Stecker / Port'), connectors, setConnectors, 'list_connectors', setQuickCreateConnector))}
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
                       <button type="button" onClick={handleQuickCreateAndLink} className="btn-primary" style={{ flex: 1, padding: '0.4rem', fontSize: '0.8rem' }}>
@@ -6561,12 +6446,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
 
               {/* Options list */}
               {selectModal.options.map(opt => {
-                const isSelected = selectModal.value === opt;
+                const isSelected = selectModal.value === opt.value;
                 return (
                   <button
-                    key={opt}
+                    key={opt.value}
                     type="button"
-                    onClick={() => selectModal.onSelect(opt)}
+                    onClick={() => selectModal.onSelect(opt.value)}
                     style={{
                       width: '100%',
                       padding: '0.85rem 1rem',
@@ -6583,7 +6468,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       textAlign: 'left'
                     }}
                   >
-                    <span>{formatDisplayValue(opt, language)}</span>
+                    <span>{opt.label}</span>
                     {isSelected && <Check size={18} style={{ color: 'var(--accent-primary)' }} />}
                   </button>
                 );
