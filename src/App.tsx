@@ -4372,15 +4372,63 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           {/* 2. SUB-VIEW: LAYOUT */}
           {settingsView === 'layout' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <h3>{t('layout_theme', 'Layout (Theme)')}</h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' }}>
-                  <span>{t('enable_dark_theme', 'Dark Theme aktivieren')}</span>
-                  <button 
-                    onClick={() => setDarkMode(!darkMode)}
-                    style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', cursor: 'pointer' }}
+              <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
+                  {t('layout_theme', 'Erscheinungsbild (Theme)')}
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  {language === 'en' ? 'Choose your preferred app design mode:' : 'Wähle das bevorzugte App-Design:'}
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '0.8rem', marginTop: '0.5rem' }}>
+                  {/* Option 1: Dunkelmodus */}
+                  <button
+                    type="button"
+                    onClick={() => setDarkMode(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1rem',
+                      borderRadius: 'var(--radius-sm)',
+                      background: darkMode ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                      border: darkMode ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                      color: darkMode ? 'white' : 'var(--text-primary)',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      transition: 'all 0.2s ease'
+                    }}
                   >
-                    {darkMode ? t('theme_enabled', 'Aktiviert (Dunkel)') : t('theme_disabled', 'Deaktiviert (Hell)')}
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.95rem' }}>
+                      <Moon size={20} style={{ color: darkMode ? 'white' : '#818cf8' }} />
+                      <span>{t('dark_mode', 'Dunkelmodus (Dark)')}</span>
+                    </span>
+                    {darkMode && <Check size={18} style={{ color: 'white' }} />}
+                  </button>
+
+                  {/* Option 2: Hellmodus */}
+                  <button
+                    type="button"
+                    onClick={() => setDarkMode(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '1rem',
+                      borderRadius: 'var(--radius-sm)',
+                      background: !darkMode ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                      border: !darkMode ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                      color: !darkMode ? 'white' : 'var(--text-primary)',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.95rem' }}>
+                      <Sun size={20} style={{ color: !darkMode ? 'white' : '#f59e0b' }} />
+                      <span>{t('light_mode', 'Hellmodus (Light)')}</span>
+                    </span>
+                    {!darkMode && <Check size={18} style={{ color: 'white' }} />}
                   </button>
                 </div>
               </div>
