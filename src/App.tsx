@@ -5986,8 +5986,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             flexDirection: 'column',
             alignItems: 'center', 
             justifyContent: 'center', 
-            zIndex: 2000, 
-            backdropFilter: 'blur(15px)'
+            zIndex: 2000
           }}
         >
           <div 
@@ -6129,7 +6128,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
       {/* LINKING MODAL */}
       {/* MODAL: LINKING COMPONENTS */}
       {linkingSource && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1100, backdropFilter: 'blur(10px)', padding: 'calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem 1rem', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 1100, padding: 'calc(1rem + env(safe-area-inset-top, 0px)) 1rem 1rem 1rem', overflowY: 'auto' }}>
           <div className="glass-panel" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-glass)', borderRadius: 'var(--radius-sm)', padding: '1.25rem', width: '100%', maxWidth: '380px', display: 'flex', flexDirection: 'column', gap: '1rem', color: 'var(--text-primary)', maxHeight: '100%', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem' }}>
               <h3 style={{ margin: 0 }}>{t('link_component', 'Komponente verknüpfen')}</h3>
@@ -6288,7 +6287,6 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
           right: 0,
           bottom: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -6375,7 +6373,6 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             right: 0,
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            backdropFilter: 'blur(4px)',
             display: 'flex',
             alignItems: 'flex-end',
             justifyContent: 'center',
@@ -6394,7 +6391,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               borderTopRightRadius: 'var(--radius-lg)',
               borderBottomLeftRadius: 0,
               borderBottomRightRadius: 0,
-              padding: '1.25rem',
+              padding: '1.25rem 1.25rem calc(2.2rem + env(safe-area-inset-bottom, 24px)) 1.25rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
@@ -6419,7 +6416,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             </div>
 
             {/* Options List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', maxHeight: '55vh', paddingRight: '0.2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', maxHeight: '55vh', paddingRight: '0.2rem', paddingBottom: '3rem' }}>
               {/* Option: Keine Angabe */}
               <button
                 type="button"
