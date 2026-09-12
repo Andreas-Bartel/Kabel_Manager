@@ -3101,37 +3101,34 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             </div>
 
             {/* Paar: Stecker 1 + Standard 1 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
+            <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+              <div style={{ minWidth: 0 }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_type_1', 'Stecker-Typ 1')}</label>
                 {renderSelectTrigger(t('connector_type_1', 'Stecker-Typ 1'), cabConnectorType1, connectors, setCabConnectorType1, () => openPromptForAddNew('Stecker-Typ 1', connectors, setConnectors, 'list_connectors', setCabConnectorType1))}
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('standard_connector_1', 'Standard (Stecker 1)')}</label>
                 {renderSelectTrigger(t('standard_connector_1', 'Standard (Stecker 1)'), cabCableStandard1, cableStandardGroups[getConnectorFamily(cabConnectorType1)] || [], setCabCableStandard1, () => openPromptForAddNew('Standard (Stecker 1)', cableStandardGroups[getConnectorFamily(cabConnectorType1)] || [], (updated) => setCableStandardGroups(prev => ({ ...prev, [getConnectorFamily(cabConnectorType1)]: updated })), 'list_standards_' + getConnectorFamily(cabConnectorType1), setCabCableStandard1))}
               </div>
             </div>
 
             {/* Paar: Stecker 2 + Standard 2 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
+            <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+              <div style={{ minWidth: 0 }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_type_2', 'Stecker-Typ 2')}</label>
                 {renderSelectTrigger(t('connector_type_2', 'Stecker-Typ 2'), cabConnectorType2, connectors, setCabConnectorType2, () => openPromptForAddNew('Stecker-Typ 2', connectors, setConnectors, 'list_connectors', setCabConnectorType2))}
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('standard_connector_2', 'Standard (Stecker 2)')}</label>
                 {renderSelectTrigger(t('standard_connector_2', 'Standard (Stecker 2)'), cabCableStandard2, cableStandardGroups[getConnectorFamily(cabConnectorType2)] || [], setCabCableStandard2, () => openPromptForAddNew('Standard (Stecker 2)', cableStandardGroups[getConnectorFamily(cabConnectorType2)] || [], (updated) => setCableStandardGroups(prev => ({ ...prev, [getConnectorFamily(cabConnectorType2)]: updated })), 'list_standards_' + getConnectorFamily(cabConnectorType2), setCabCableStandard2))}
               </div>
             </div>
 
             {/* Kabellänge */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
+            <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+              <div style={{ minWidth: 0 }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('length', 'Kabellänge')}</label>
                 {renderSelectTrigger(t('length', 'Kabellänge'), cabLength, lengths, setCabLength, () => openPromptForAddNew('Kabellänge', lengths, setLengths, 'list_lengths', setCabLength))}
-              </div>
-              <div>
-                {/* Platzhalter */}
               </div>
             </div>
 
@@ -3336,7 +3333,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Foto beschreiben & hinzufügen */}
             {showCabPhotos && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('add_photo_label', 'Foto beschreiben & hinzufügen')}</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
@@ -3754,7 +3751,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Foto beschreiben & hinzufügen */}
             {showChargerPhotos && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('add_photo_label', 'Foto beschreiben & hinzufügen')}</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
@@ -4122,7 +4119,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             {/* Foto beschreiben & hinzufügen für Geräte */}
             {showDevPhotos && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                   <div>
                     <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('add_photo_label', 'Foto beschreiben & hinzufügen')}</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
@@ -5049,7 +5046,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     </button>
                     {editShowPhotos && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                           <div>
                             <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
@@ -5209,34 +5206,33 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                 ) : (
                   // Cable Fields
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                      <div style={{ minWidth: 0 }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 1</label>
                         {renderSelectTrigger('Stecker-Typ 1', editConnectorType1, connectors, setEditConnectorType1, () => openPromptForAddNew('Stecker-Typ 1', connectors, setConnectors, 'list_connectors', setEditConnectorType1))}
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 1)</label>
                         {renderSelectTrigger('Standard (Stecker 1)', editCableStandard1, cableStandardGroups[getConnectorFamily(editConnectorType1)] || [], setEditCableStandard1, () => openPromptForAddNew('Standard (Stecker 1)', cableStandardGroups[getConnectorFamily(editConnectorType1)] || [], (updated) => setCableStandardGroups(prev => ({ ...prev, [getConnectorFamily(editConnectorType1)]: updated })), 'list_standards_' + getConnectorFamily(editConnectorType1), setEditCableStandard1))}
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                      <div style={{ minWidth: 0 }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Stecker-Typ 2</label>
                         {renderSelectTrigger('Stecker-Typ 2', editConnectorType2, connectors, setEditConnectorType2, () => openPromptForAddNew('Stecker-Typ 2', connectors, setConnectors, 'list_connectors', setEditConnectorType2))}
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Standard (Stecker 2)</label>
                         {renderSelectTrigger('Standard (Stecker 2)', editCableStandard2, cableStandardGroups[getConnectorFamily(editConnectorType2)] || [], setEditCableStandard2, () => openPromptForAddNew('Standard (Stecker 2)', cableStandardGroups[getConnectorFamily(editConnectorType2)] || [], (updated) => setCableStandardGroups(prev => ({ ...prev, [getConnectorFamily(editConnectorType2)]: updated })), 'list_standards_' + getConnectorFamily(editConnectorType2), setEditCableStandard2))}
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                      <div style={{ minWidth: 0 }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Kabellänge</label>
                         {renderSelectTrigger('Kabellänge', editLength, lengths, setEditLength, () => openPromptForAddNew('Kabellänge', lengths, setLengths, 'list_lengths', setEditLength))}
                       </div>
-                      <div />
                     </div>
                   </>
                 )}
@@ -5727,7 +5723,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     </button>
                     {editShowPhotos && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px dashed var(--border-glass)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.1)' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 450 ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                           <div>
                             <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Foto beschreiben & hinzufügen</label>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
