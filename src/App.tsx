@@ -237,6 +237,7 @@ export default function App() {
         onClick={() => openCustomSelect(label, value, optionsList, onSelectValue, onAddNewValue)}
         style={{
           width: '100%',
+          minWidth: 0,
           padding: '0.65rem 0.8rem',
           borderRadius: 'var(--radius-sm)',
           border: '1px solid var(--border-glass)',
@@ -248,6 +249,7 @@ export default function App() {
           cursor: 'pointer',
           fontSize: '0.9rem',
           textAlign: 'left',
+          overflow: 'hidden',
           ...customStyle
         }}
       >
@@ -3922,17 +3924,19 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             <h3>{t('add_device', 'Gerät anlegen')}</h3>
             <input type="text" placeholder={language === 'en' ? 'Name (optional, e.g. iPad Pro)' : 'Name (optional, z.B. iPad Pro)'} value={devName} onChange={e => setDevName(e.target.value)} style={{ padding: '0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-glass)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} />
             {/* Anschlüsse */}
-            <div style={{ display: 'grid', gridTemplateColumns: showDevPort2 ? '1fr 1fr' : '1fr', gap: '1rem' }}>
-              <div>
+            <div style={{ display: 'grid', gridTemplateColumns: (showDevPort2 && windowWidth >= 450) ? '1fr 1fr' : '1fr', gap: '1rem' }}>
+              <div style={{ minWidth: 0 }}>
                 <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_port_1', 'Anschluss (Port 1)')}</label>
                 {renderSelectTrigger(t('connector_port_1', 'Anschluss (Port 1)'), devConnector, connectors, setDevConnector, () => openPromptForAddNew(t('connector_port_1', 'Anschluss (Port 1)'), connectors, setConnectors, 'list_connectors', setDevConnector))}
               </div>
               {showDevPort2 && (
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{t('connector_port_2', 'Anschluss (Port 2)')}</label>
-                  <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                    {renderSelectTrigger(t('connector_port_2', 'Anschluss (Port 2)'), devConnector2, connectors, setDevConnector2, () => openPromptForAddNew(t('connector_port_2', 'Anschluss (Port 2)'), connectors, setConnectors, 'list_connectors', setDevConnector2), '-- ' + t('none', 'Keiner') + ' --', { flex: 1 })}
-                    <button type="button" onClick={() => { setShowDevPort2(false); setDevConnector2(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem' }}>&times;</button>
+                  <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', minWidth: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {renderSelectTrigger(t('connector_port_2', 'Anschluss (Port 2)'), devConnector2, connectors, setDevConnector2, () => openPromptForAddNew(t('connector_port_2', 'Anschluss (Port 2)'), connectors, setConnectors, 'list_connectors', setDevConnector2), '-- ' + t('none', 'Keiner') + ' --', { flex: 1 })}
+                    </div>
+                    <button type="button" onClick={() => { setShowDevPort2(false); setDevConnector2(''); }} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.1rem', flexShrink: 0 }}>&times;</button>
                   </div>
                 </div>
               )}
@@ -6391,7 +6395,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
               borderTopRightRadius: 'var(--radius-lg)',
               borderBottomLeftRadius: 0,
               borderBottomRightRadius: 0,
-              padding: '1.25rem 1.25rem calc(2.2rem + env(safe-area-inset-bottom, 24px)) 1.25rem',
+              padding: '1.25rem 1.25rem calc(3.5rem + env(safe-area-inset-bottom, 36px)) 1.25rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
@@ -6416,7 +6420,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             </div>
 
             {/* Options List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', maxHeight: '55vh', paddingRight: '0.2rem', paddingBottom: '3rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', maxHeight: '55vh', paddingRight: '0.2rem', paddingBottom: '4rem' }}>
               {/* Option: Keine Angabe */}
               <button
                 type="button"
