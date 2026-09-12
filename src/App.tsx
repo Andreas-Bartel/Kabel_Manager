@@ -112,7 +112,10 @@ export default function App() {
   const [currentUserId, setCurrentUserId] = useState('');
 
   // Dark Mode State
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('theme_dark_mode');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
 
   // Responsive Width
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 800);
@@ -832,8 +835,9 @@ export default function App() {
     refreshData();
   }, []);
 
-  // Sync Dark Mode variables to Document Root
+  // Sync Dark Mode variables to Document Root & persist in localStorage
   useEffect(() => {
+    localStorage.setItem('theme_dark_mode', JSON.stringify(darkMode));
     const root = document.documentElement;
     if (darkMode) {
       root.style.setProperty('--bg-primary', '#111422');
