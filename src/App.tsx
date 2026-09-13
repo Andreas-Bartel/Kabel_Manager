@@ -1782,6 +1782,114 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
     setEditExpandedProps(expanded);
   };
 
+  const renderCardLinkBadges = (item: Cable | Device, isDevice: boolean = false) => {
+    const linkedBadges: { id: string; name: string; badgeLabel: string; isDevice: boolean }[] = [];
+
+    if (isDevice) {
+      const dev = item as Device;
+      const cableIds = Array.from(new Set([
+        ...(dev.compatibleCableIds || []),
+        ...cables.filter(c => (c.assignedDeviceIds || []).includes(dev.id)).map(c => c.id)
+      ]));
+
+      cableIds.forEach(cabId => {
+        const cab = cables.find(c => c.id === cabId);
+        if (cab) {
+          const isCharger = cab.isMultiOutput || (cab.powerOutputs && cab.powerOutputs.length > 0);
+          const icon = isCharger ? '🔌' : '🔌';
+          linkedBadges.push({
+            id: cab.id,
+            name: cab.name,
+            badgeLabel: `${icon} ${cab.name}`,
+            isDevice: false
+          });
+        }
+      });
+    } else {
+      const cab = item as Cable;
+      const devIds = Array.from(new Set([
+        ...(cab.assignedDeviceIds || []),
+        ...devices.filter(d => (d.compatibleCableIds || []).includes(cab.id)).map(d => d.id)
+      ]));
+
+      devIds.forEach(devId => {
+        const dev = devices.find(d => d.id === devId);
+        if (dev) {
+          linkedBadges.push({
+            id: dev.id,
+            name: dev.name,
+            badgeLabel: `📱 ${dev.name}`,
+            isDevice: true
+          });
+        }
+      });
+
+      const otherCabIds = Array.from(new Set([
+        ...(cab.assignedCableIds || []),
+        ...cables.filter(c => c.id !== cab.id && (c.assignedCableIds || []).includes(cab.id)).map(c => c.id)
+      ]));
+
+      otherCabIds.forEach(otherId => {
+        const otherCab = cables.find(c => c.id === otherId);
+        if (otherCab) {
+          const isCharger = otherCab.isMultiOutput || (otherCab.powerOutputs && otherCab.powerOutputs.length > 0);
+          const icon = isCharger ? '🔌' : '🔌';
+          linkedBadges.push({
+            id: otherCab.id,
+            name: otherCab.name,
+            badgeLabel: `${icon} ${otherCab.name}`,
+            isDevice: false
+          });
+        }
+      });
+    }
+
+    if (linkedBadges.length === 0) return null;
+
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.3rem', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+          🔗 {language === 'en' ? 'Linked:' : 'Verknüpft:'}
+        </span>
+        {linkedBadges.map((linked, idx) => (
+          <span 
+            key={`${linked.id}-${idx}`} 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (linked.isDevice) {
+                const dev = devices.find(d => d.id === linked.id);
+                if (dev) openDeviceDetails(dev);
+              } else {
+                const cab = cables.find(c => c.id === linked.id);
+                if (cab) openCableDetails(cab);
+              }
+            }}
+            title={language === 'en' ? `Click to open ${linked.name}` : `Klicken zum Öffnen von ${linked.name}`}
+            style={{ 
+              fontSize: '0.7rem', 
+              background: 'var(--accent-glow)', 
+              color: 'var(--accent-primary)', 
+              padding: '0.1rem 0.45rem', 
+              borderRadius: '12px', 
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              fontWeight: 500,
+              maxWidth: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              cursor: 'pointer'
+            }}
+          >
+            {linked.badgeLabel}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   const handleImageAttachmentUploadEdit = async (context: 'cable' | 'device', file: File, label: string) => {
     try {
       setIsCompressing(true);
@@ -2190,6 +2298,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       </span>
                     )}
                   </div>
+                  {renderCardLinkBadges(c, false)}
                 </div>
               );
             })}
@@ -2239,6 +2348,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     </span>
                   )}
                 </div>
+                {renderCardLinkBadges(d, true)}
               </div>
             ))}
           </div>
@@ -2888,6 +2998,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       ) : null;
                     })}
                   </div>
+                  {renderCardLinkBadges(c, false)}
                 </div>
               ))}
 
@@ -2982,6 +3093,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       </div>
                     )}
                   </div>
+                  {renderCardLinkBadges(c, false)}
                 </div>
               ))}
 
@@ -3051,6 +3163,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       ) : null;
                     })}
                   </div>
+                  {renderCardLinkBadges(d, true)}
                 </div>
               ))}
 
@@ -3475,6 +3588,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       ) : null;
                     })}
                   </div>
+                  {renderCardLinkBadges(c, false)}
                 </div>
               ))}
             </div>
@@ -3911,6 +4025,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                       </div>
                     )}
                   </div>
+                  {renderCardLinkBadges(c, false)}
                 </div>
               ))}
             </div>
@@ -4255,6 +4370,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                         ) : null;
                       })}
                     </div>
+                    {renderCardLinkBadges(d, true)}
                   </div>
                 ))
               )}
