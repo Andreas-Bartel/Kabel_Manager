@@ -6438,12 +6438,12 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             style={{
               width: '100%',
               maxWidth: '500px',
-              maxHeight: '80vh',
+              maxHeight: '88vh',
               borderTopLeftRadius: 'var(--radius-lg)',
               borderTopRightRadius: 'var(--radius-lg)',
               borderBottomLeftRadius: 0,
               borderBottomRightRadius: 0,
-              padding: '1.25rem 1.25rem calc(3.5rem + env(safe-area-inset-bottom, 36px)) 1.25rem',
+              padding: '1.25rem 1.25rem calc(1.8rem + env(safe-area-inset-bottom, 20px)) 1.25rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
@@ -6468,7 +6468,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
             </div>
 
             {/* Options List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', maxHeight: '55vh', paddingRight: '0.2rem', paddingBottom: '4rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', overflowY: 'auto', maxHeight: '70vh', paddingRight: '0.2rem', paddingBottom: '1rem' }}>
               {/* Option: Keine Angabe */}
               <button
                 type="button"
