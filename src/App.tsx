@@ -4870,22 +4870,9 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
                     <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>{language === 'en' ? 'Responsible:' : 'Verantwortlicher:'}</strong>
                     <div style={{ marginTop: '0.2rem', fontWeight: 600 }}>Andreas Bartel</div>
                   </div>
-                  
-                  <div>
-                    <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t('contact_support', 'Kontakt / Support:')}</strong>
-                    <div style={{ marginTop: '0.2rem' }}>
-                      <a 
-                        href="mailto:workandbartel@gmail.com" 
-                        style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                      >
-                        workandbartel@gmail.com
-                      </a>
-                    </div>
-                  </div>
 
                   <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     <div>{t('app_title', 'Kabel Manager')} v{packageJson.version}</div>
-                    <div>{t('guest_mode_active', 'Lokaler Gast-Modus aktiv')}</div>
                   </div>
                 </div>
               </div>
