@@ -2166,7 +2166,7 @@ function generateNextDefaultName(prefix: string, existingNames: string[]): strin
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0', marginBottom: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => { stopCamera(); setReassigningCableId(null); setActiveTab('home'); }}>
           <CableIcon size={24} style={{ color: 'var(--accent-primary)' }} />
-          <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>Kabel Manager</h1>
+          <h1 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}>{t('app_title', 'Kabel Manager')}</h1>
         </div>
 
         <button 
